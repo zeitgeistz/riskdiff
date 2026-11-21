@@ -1,0 +1,24 @@
+name: Rule idea
+description: Suggest a new risk pattern riskdiff should catch
+labels: [rules, enhancement]
+body:
+  - type: textarea
+    id: risk
+    attributes:
+      label: What risky change should be caught?
+      description: Why it's risky, and how often you see it (especially in AI-written code).
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example diff
+      render: diff
+    validations:
+      required: true
+  - type: textarea
+    id: safe
+    attributes:
+      label: A similar change that should NOT be flagged
+      description: Helps keep the rule from producing false positives.
+      render: diff

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="889" height="604" viewBox="0 0 889 604" role="img" aria-label="riskdiff terminal output: hunks ranked riskiest first">
+<style>
+text{font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#c9d1d9;opacity:0;animation:in .25s ease forwards}
+@keyframes in{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){text{animation:none;opacity:1}}
+</style>
+<rect width="100%" height="100%" rx="10" fill="#0d1117"/>
+<circle cx="20" cy="18" r="6" fill="#ff5f56"/><circle cx="40" cy="18" r="6" fill="#ffbd2e"/><circle cx="60" cy="18" r="6" fill="#27c93f"/>
+<text x="20" y="58" xml:space="preserve" style="animation-delay:0.20s"><tspan fill="#7ee787">$</tspan><tspan fill="#f0f6fc"> riskdiff</tspan></text>
+<text x="20" y="78" xml:space="preserve" style="animation-delay:1.02s"><tspan fill="#f0f6fc" font-weight="bold">riskdiff</tspan> · 6 files, 6 hunks · <tspan fill="#ff7b72">2 high</tspan> · <tspan fill="#e3b341">2 medium</tspan> · <tspan fill="#79c0ff">1 low</tspan></text>
+<text x="20" y="98" xml:space="preserve" style="animation-delay:1.14s"></text>
+<text x="20" y="118" xml:space="preserve" style="animation-delay:1.26s"><tspan fill="#e3b341">⚠  Tests weakened: 1 test skipped or focused, 1 hunk removed assertions</tspan></text>
+<text x="20" y="138" xml:space="preserve" style="animation-delay:1.38s"></text>
+<text x="20" y="158" xml:space="preserve" style="animation-delay:1.50s"><tspan fill="#ff7b72" font-weight="bold">HIGH</tspan>    60  <tspan fill="#f0f6fc" font-weight="bold">requirements.txt:1</tspan><tspan fill="#8b949e"></tspan></text>
+<text x="20" y="178" xml:space="preserve" style="animation-delay:1.62s"><tspan fill="#8b949e">            +3 −0  (added)</tspan></text>
+<text x="20" y="198" xml:space="preserve" style="animation-delay:1.74s">            <tspan fill="#ff7b72">•</tspan> reqeusts looks like requests; check it is the package you meant<tspan fill="#8b949e"> [package-lookalike +30]</tspan></text>
+<text x="20" y="218" xml:space="preserve" style="animation-delay:1.86s">            <tspan fill="#ff7b72">•</tspan> Adds or changes a dependency<tspan fill="#8b949e"> [new-dependency +15]</tspan></text>
+<text x="20" y="238" xml:space="preserve" style="animation-delay:1.98s">            <tspan fill="#ff7b72">•</tspan> Adds requests and httpx, which do the same job (HTTP client)<tspan fill="#8b949e"> [duplicate-dependency +15]</tspan></text>
+<text x="20" y="258" xml:space="preserve" style="animation-delay:2.10s"></text>
+<text x="20" y="278" xml:space="preserve" style="animation-delay:2.22s"><tspan fill="#ff7b72" font-weight="bold">HIGH</tspan>    50  <tspan fill="#f0f6fc" font-weight="bold">src/routes/admin.js:2</tspan><tspan fill="#8b949e"></tspan></text>
+<text x="20" y="298" xml:space="preserve" style="animation-delay:2.34s"><tspan fill="#8b949e">            +0 −1</tspan></text>
+<text x="20" y="318" xml:space="preserve" style="animation-delay:2.46s">            <tspan fill="#ff7b72">•</tspan> Removes an authentication or permission check<tspan fill="#8b949e"> [auth-check-removed +50]</tspan></text>
+<text x="20" y="338" xml:space="preserve" style="animation-delay:2.58s"></text>
+<text x="20" y="358" xml:space="preserve" style="animation-delay:2.70s"><tspan fill="#e3b341" font-weight="bold">MEDIUM</tspan>  40  <tspan fill="#f0f6fc" font-weight="bold">test/users.test.js:1</tspan><tspan fill="#8b949e"></tspan></text>
+<text x="20" y="378" xml:space="preserve" style="animation-delay:2.82s"><tspan fill="#8b949e">            +1 −2</tspan></text>
+<text x="20" y="398" xml:space="preserve" style="animation-delay:2.94s">            <tspan fill="#ff7b72">•</tspan> Skips or focuses tests<tspan fill="#8b949e"> [test-skipped +20]</tspan></text>
+<text x="20" y="418" xml:space="preserve" style="animation-delay:3.06s">            <tspan fill="#ff7b72">•</tspan> Removes test assertions<tspan fill="#8b949e"> [assertion-removed +20]</tspan></text>
+<text x="20" y="438" xml:space="preserve" style="animation-delay:3.18s"></text>
+<text x="20" y="458" xml:space="preserve" style="animation-delay:3.30s"><tspan fill="#e3b341" font-weight="bold">MEDIUM</tspan>  25  <tspan fill="#f0f6fc" font-weight="bold">src/db/users.js:2</tspan><tspan fill="#8b949e"></tspan></text>
+<text x="20" y="478" xml:space="preserve" style="animation-delay:3.42s"><tspan fill="#8b949e">            +1 −1</tspan></text>
+<text x="20" y="498" xml:space="preserve" style="animation-delay:3.54s">            <tspan fill="#ff7b72">•</tspan> SQL built from string concatenation or interpolation<tspan fill="#8b949e"> [sql-injection +25]</tspan></text>
+<text x="20" y="518" xml:space="preserve" style="animation-delay:3.66s"></text>
+<text x="20" y="538" xml:space="preserve" style="animation-delay:3.78s"><tspan fill="#79c0ff" font-weight="bold">LOW</tspan>     15  <tspan fill="#f0f6fc" font-weight="bold">package.json:3</tspan><tspan fill="#8b949e"></tspan></text>
+<text x="20" y="558" xml:space="preserve" style="animation-delay:3.90s"><tspan fill="#8b949e">            +2 −1</tspan></text>
+<text x="20" y="578" xml:space="preserve" style="animation-delay:4.02s">            <tspan fill="#ff7b72">•</tspan> Adds or changes a dependency<tspan fill="#8b949e"> [new-dependency +15]</tspan></text>
+</svg>

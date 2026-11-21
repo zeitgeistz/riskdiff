@@ -1,0 +1,39 @@
+name: Wrong finding
+description: riskdiff flagged something safe, or missed something risky
+labels: [rules]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What happened?
+      options:
+        - False positive (flagged something safe)
+        - Missed risk (should have been flagged)
+        - Wrong score or level
+    validations:
+      required: true
+  - type: input
+    id: rule
+    attributes:
+      label: Rule id
+      description: The rule that fired, or the one you expected. Leave empty if unsure.
+      placeholder: sql-injection
+  - type: textarea
+    id: diff
+    attributes:
+      label: Smallest diff that shows it
+      description: Paste the relevant part of `git diff`. Remove anything private.
+      render: diff
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is the result wrong?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: riskdiff version
+      placeholder: output of `riskdiff --version`

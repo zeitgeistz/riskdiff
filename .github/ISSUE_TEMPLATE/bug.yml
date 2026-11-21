@@ -1,0 +1,42 @@
+name: Bug
+description: A crash, wrong output format, or an integration (Action, hook, MCP, plugin) that doesn't work
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The command you ran, and the diff or repo setup if it matters.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or error
+      render: text
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - CLI
+        - GitHub Action
+        - Claude Code plugin / hook
+        - MCP server
+        - --ai review
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: riskdiff version, Node.js version, OS
+      placeholder: 2.0.0, Node 22, macOS 15
+    validations:
+      required: true

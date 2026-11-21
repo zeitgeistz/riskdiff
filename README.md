@@ -19,31 +19,9 @@ It's built for the moment an AI agent hands you 14 changed files and you have fi
 
 ---
 
-```text
-$ riskdiff
-riskdiff · 5 files, 5 hunks · 1 high · 2 medium · 1 low
+<p align="center"><img src="docs/demo.svg" alt="riskdiff ranking the hunks of an AI-written diff, riskiest first" width="820"></p>
 
-⚠  Tests weakened: 1 test skipped or focused, 1 hunk removed assertions
-
-HIGH    50  src/routes/admin.js:2
-            +0 −1
-            • Removes an authentication or permission check [auth-check-removed +50]
-
-MEDIUM  40  test/users.test.js:1
-            +1 −2
-            • Skips or focuses tests [test-skipped +20]
-            • Removes test assertions [assertion-removed +20]
-
-MEDIUM  25  src/db/users.js:2
-            +1 −1
-            • SQL built from string concatenation or interpolation [sql-injection +25]
-
-LOW     15  package.json:3
-            +2 −1
-            • Adds or changes a dependency [new-dependency +15]
-```
-
-In this diff the agent removed `requireAuth`, skipped a failing test instead of fixing it, swapped a parameterized query for string interpolation, and added a package called `react-codeshift`, a name AI models are known to invent. The harmless formatting change in `src/format.js` scored 0 and is hidden.
+In this diff the agent removed `requireAuth`, skipped a failing test instead of fixing it, swapped a parameterized query for string interpolation, added `reqeusts` (one typo away from `requests`) next to a second HTTP client, and added a package called `react-codeshift`, a name AI models are known to invent. The harmless formatting change in `src/format.js` scored 0 and is hidden.
 
 ## 🤔 Why
 
@@ -65,7 +43,7 @@ A big diff gets read top to bottom, and attention runs out before the dangerous 
 - ⚙️ **Configurable.** Ignore paths, turn rules off, change weights, and add your own rules in `.riskdiff.json`, or silence one hunk with `riskdiff-ignore`.
 - 📦 **Zero dependencies.** Only Node.js and git.
 - 🖥️ **Four output formats:** colored terminal, JSON for tools and agents, Markdown for PR comments, SARIF for code scanning.
-- ⚙️ **GitHub Action:** `uses: zeitgeistz/riskdiff@v1` comments a risk table on every PR and fails the check on high risk.
+- ⚙️ **GitHub Action:** `uses: zeitgeistz/riskdiff@v2` comments a risk table on every PR and fails the check on high risk.
 - 🚦 **CI gate:** `--fail-on high` exits with code 1.
 - 🤖 **Claude Code plugin:** a hook warns Claude right after it makes a risky edit, an MCP tool lets it scan any range, and a skill walks you through the review.
 - ✦ **Optional AI second opinion** (`--ai`): Claude marks each flagged hunk as likely real or a likely false positive, with one sentence of why. Off by default.
@@ -373,7 +351,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - uses: zeitgeistz/riskdiff@v1
+      - uses: zeitgeistz/riskdiff@v2
         with:
           fail-on: high
           check-packages: true
@@ -402,7 +380,7 @@ Show findings as annotations on the PR diff and in the repo's **Security → Cod
     steps:
       # ...checkout and setup-node as above
       - id: riskdiff
-        uses: zeitgeistz/riskdiff@v1
+        uses: zeitgeistz/riskdiff@v2
         with:
           sarif: true
       - uses: github/codeql-action/upload-sarif@v3
@@ -521,6 +499,10 @@ test/             Tests (node:test)
 - [x] Claude Code plugin: hook, MCP server, skill (v2.0)
 - [x] Optional AI second opinion with `--ai` (v2.0)
 - [ ] Published to npm as `riskdiff-cli` (the release workflow is ready; it publishes once an `NPM_TOKEN` secret is added)
+
+## 🤝 Contributing
+
+New rules, false-positive fixes, and bug reports with a reproducing diff are all welcome. See [CONTRIBUTING.md](CONTRIBUTING.md), or pick a [good first issue](https://github.com/zeitgeistz/riskdiff/labels/good%20first%20issue).
 
 ## 📄 License
 

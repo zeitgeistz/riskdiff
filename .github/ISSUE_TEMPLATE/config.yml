@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security issue in riskdiff itself
+    url: https://github.com/zeitgeistz/riskdiff/security/advisories/new
+    about: Report privately instead of opening a public issue.
