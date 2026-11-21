@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0 — 2026-11-21
+
+- **Claude Code plugin.** The repo is now a plugin marketplace: `/plugin marketplace add zeitgeistz/riskdiff`, then `/plugin install riskdiff@riskdiff`. It bundles the hook, the MCP server, and the `zeit-riskdiff` skill.
+- **`riskdiff hook`**: a PostToolUse hook. After Claude edits a file, it scans that file's uncommitted changes and gives Claude any medium or high findings. It never blocks an edit and exits 0 on any error.
+- **`riskdiff mcp`**: an MCP server over stdio with one tool, `riskdiff_scan` (`range`, `staged`, `checkPackages`, `minLevel`, `cwd`).
+- **`--ai`**: an opt-in second opinion from Claude on up to 15 of the riskiest hunks. Each gets `likely real`, `likely false positive`, or `unsure`, plus one sentence. Needs `ANTHROPIC_API_KEY`; the model defaults to `claude-opus-5-5` and can be changed with `RISKDIFF_AI_MODEL`. Scores and `--fail-on` are unchanged.
+- Breaking: `hook` and `mcp` as the first argument are now subcommands. To diff a branch with one of those names, use `riskdiff -- hook` or `riskdiff hook...HEAD`.
+
 ## 1.3.0 — 2026-11-21
 
 - **GitHub Action**: `uses: zeitgeistz/riskdiff@v1` posts (and keeps updating) a risk table on the PR, writes it to the job summary, and fails on a chosen level. Inputs: `base`, `fail-on`, `comment`, `check-packages`, `sarif`, `github-token`.

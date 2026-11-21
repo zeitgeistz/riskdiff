@@ -4,6 +4,9 @@ import { parseArgs } from 'node:util';
 import { analyze } from '../src/analyze.js';
 import { formatText, formatMarkdown, formatJson, formatSarif, atOrAbove } from '../src/report.js';
 import { buildRules } from '../src/config.js';
+import { aiReview } from '../src/ai.js';
+import { runHook } from '../src/hook.js';
+import { serve } from '../src/mcp.js';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -14,6 +17,8 @@ Usage
   riskdiff --staged           Staged changes only
   riskdiff <git-diff-args>    Any git diff range, e.g. main...HEAD
   git diff | riskdiff         Read a diff from stdin (or pass "-")
+  riskdiff hook               Claude Code PostToolUse hook (reads hook JSON on stdin)
+  riskdiff mcp                Run as an MCP server over stdio
 
 Options
   --json                  Machine-readable output
@@ -23,6 +28,9 @@ Options
   --code                  Show the changed lines under each hunk
   --fail-on <level>       Exit 1 if any hunk is at or above low|medium|high
   --check-packages        Look new npm/PyPI dependencies up in their registries
+  --ai                    Ask Claude for a second opinion on the riskiest hunks
+                          (sends their changed lines to the Anthropic API;
+                          needs ANTHROPIC_API_KEY, model via RISKDIFF_AI_MODEL)
   --config <path>         Config file (default: .riskdiff.json in the repo root)
   --no-untracked          Leave out untracked files
   --no-color              Disable colors
@@ -30,6 +38,10 @@ Options
   -v, --version           Show version`;
 
 async function main() {
+  const sub = process.argv[2];
+  if (sub === 'hook') return hook();
+  if (sub === 'mcp') return serve({ version: VERSION });
+
   let args;
   try {
     args = parseArgs({
@@ -44,6 +56,7 @@ async function main() {
         'fail-on': { type: 'string' },
         config: { type: 'string' },
         'check-packages': { type: 'boolean' },
+        ai: { type: 'boolean' },
         'no-untracked': { type: 'boolean' },
         'no-color': { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
@@ -80,6 +93,13 @@ async function main() {
   if (packageCheck?.failed) {
     console.error(`riskdiff: could not reach the registry for ${packageCheck.failed} package${packageCheck.failed === 1 ? '' : 's'}; they were not checked`);
   }
+  if (opts.ai) {
+    try {
+      await aiReview(results);
+    } catch (err) {
+      console.error(`riskdiff: AI review skipped: ${err.message}`);
+    }
+  }
   const failOn = opts['fail-on'] ?? config.failOn;
   const color = !opts.output && !opts['no-color'] && !process.env.NO_COLOR && process.stdout.isTTY;
   let report;
@@ -99,6 +119,16 @@ async function main() {
   }
 
   if (failOn && results.some((r) => r.score > 0 && atOrAbove(r.level, failOn))) process.exitCode = 1;
+}
+
+// Never blocks or fails the edit: any problem is logged to stderr and the hook exits 0.
+async function hook() {
+  try {
+    const out = await runHook(JSON.parse(readFileSync(0, 'utf8')));
+    if (out) console.log(JSON.stringify(out));
+  } catch (err) {
+    console.error(`riskdiff hook: ${err.message}`);
+  }
 }
 
 function stdinIsPiped() {

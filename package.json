@@ -1,6 +1,6 @@
 {
   "name": "riskdiff-cli",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "description": "Rank the hunks of a git diff by how risky they are, so you review AI-written changes in the right order.",
   "type": "module",
   "bin": {

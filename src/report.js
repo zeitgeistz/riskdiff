@@ -1,5 +1,7 @@
 import { LEVELS, testTamper } from './score.js';
 
+const AI_LABEL = { real: 'likely real', 'false-positive': 'likely false positive', unsure: 'unsure' };
+
 const COLORS = { high: '\x1b[31m', medium: '\x1b[33m', low: '\x1b[36m', none: '\x1b[90m', dim: '\x1b[2m', bold: '\x1b[1m', reset: '\x1b[0m' };
 
 export function summarize(results) {
@@ -41,6 +43,7 @@ export function formatText(results, { color = false, code = false } = {}) {
     out.push(`${c(r.level, tag)} ${String(r.score).padStart(3)}  ${c('bold', where)}${ctx}`);
     out.push(c('dim', `            +${r.added} −${r.removed}${r.status !== 'modified' ? `  (${r.status})` : ''}`));
     for (const f of r.findings) out.push(`            ${c(r.level, '•')} ${f.reason} ${c('dim', `[${f.id} +${f.weight}]`)}`);
+    if (r.ai) out.push(`            ${c('bold', 'AI:')} ${AI_LABEL[r.ai.verdict]}${r.ai.note ? ` — ${r.ai.note}` : ''}`);
     if (code) {
       for (const l of r.hunk.removed.slice(0, 20)) out.push(c('high', `            - ${l}`));
       for (const l of r.hunk.added.slice(0, 20)) out.push(c('low', `            + ${l}`));
@@ -69,7 +72,8 @@ export function formatMarkdown(results) {
   out.push('| Risk | Score | Location | Why |', '|---|---:|---|---|');
   const icon = { high: '🔴 High', medium: '🟠 Medium', low: '🔵 Low' };
   for (const r of shown) {
-    const why = r.findings.map((f) => f.reason).join('<br>');
+    let why = r.findings.map((f) => f.reason).join('<br>');
+    if (r.ai) why += `<br>🤖 _${AI_LABEL[r.ai.verdict]}${r.ai.note ? ` — ${r.ai.note.replace(/\|/g, '\\|')}` : ''}_`;
     out.push(`| ${icon[r.level]} | ${r.score} | \`${r.file}:${r.line}\` | ${why} |`);
   }
   return out.join('\n') + '\n';

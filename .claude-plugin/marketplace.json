@@ -1,0 +1,12 @@
+{
+  "name": "riskdiff",
+  "owner": { "name": "zeitgeistz" },
+  "description": "riskdiff: rank the hunks of a diff by how risky they are to merge.",
+  "plugins": [
+    {
+      "name": "riskdiff",
+      "source": "./",
+      "description": "Ranks the hunks of a diff by merge risk. Warns Claude after risky edits, adds an MCP scan tool and a review skill."
+    }
+  ]
+}

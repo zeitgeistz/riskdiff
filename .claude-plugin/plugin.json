@@ -1,0 +1,16 @@
+{
+  "name": "riskdiff",
+  "version": "2.0.0",
+  "description": "Ranks the hunks of a diff by merge risk. Warns Claude after risky edits, adds an MCP scan tool and a review skill.",
+  "author": { "name": "zeitgeistz" },
+  "homepage": "https://github.com/zeitgeistz/riskdiff",
+  "repository": "https://github.com/zeitgeistz/riskdiff",
+  "license": "MIT",
+  "keywords": ["code-review", "security", "diff", "git", "risk"],
+  "mcpServers": {
+    "riskdiff": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/riskdiff.js", "mcp"]
+    }
+  }
+}

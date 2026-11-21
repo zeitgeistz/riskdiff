@@ -67,7 +67,8 @@ A big diff gets read top to bottom, and attention runs out before the dangerous 
 - 🖥️ **Four output formats:** colored terminal, JSON for tools and agents, Markdown for PR comments, SARIF for code scanning.
 - ⚙️ **GitHub Action:** `uses: zeitgeistz/riskdiff@v1` comments a risk table on every PR and fails the check on high risk.
 - 🚦 **CI gate:** `--fail-on high` exits with code 1.
-- 🤖 **Claude Code skill included**, so your agent can review its own changes.
+- 🤖 **Claude Code plugin:** a hook warns Claude right after it makes a risky edit, an MCP tool lets it scan any range, and a skill walks you through the review.
+- ✦ **Optional AI second opinion** (`--ai`): Claude marks each flagged hunk as likely real or a likely false positive, with one sentence of why. Off by default.
 
 ## 🚀 Quick start
 
@@ -91,6 +92,8 @@ riskdiff main...HEAD         # everything on this branch since it left main
 riskdiff HEAD~3              # any range git diff accepts
 git diff main | riskdiff     # read a diff from stdin
 riskdiff - < change.patch    # or from a file
+riskdiff hook                # Claude Code PostToolUse hook (see Integrations)
+riskdiff mcp                 # MCP server over stdio (see Integrations)
 ```
 
 | Option | Description |
@@ -100,6 +103,7 @@ riskdiff - < change.patch    # or from a file
 | `--sarif` | SARIF 2.1.0 for GitHub code scanning (see [GitHub Action](#%EF%B8%8F-github-action)) |
 | `-o`, `--output <file>` | Write the report to a file instead of stdout |
 | `--check-packages` | Look new npm and PyPI dependencies up in their registries (see [Package check](#-package-check)) |
+| `--ai` | Ask Claude for a second opinion on the riskiest hunks (see [AI second opinion](#-ai-second-opinion)) |
 | `--code` | Print the changed lines under each hunk |
 | `--fail-on <level>` | Exit with code `1` if any hunk is at or above `low`, `medium`, or `high` |
 | `--config <path>` | Use this config file instead of `.riskdiff.json` in the repo root |
@@ -232,6 +236,31 @@ The check only sends package **names** to `registry.npmjs.org`, `api.npmjs.org`,
 
 For a private package that riskdiff reports as not found, turn the rule off in `.riskdiff.json` or add a `"//": "riskdiff-ignore package-not-found"` line next to it.
 
+## ✦ AI second opinion
+
+Regex rules are fast, but they can't tell `eval(trustedConstant)` from `eval(req.body.code)`. `--ai` sends the riskiest hunks (up to 15, at most 40 lines each, with their findings) to Claude and asks for one verdict per hunk:
+
+```text
+HIGH    55  src/run.js:12
+            • Runs dynamic code or shell commands [dangerous-exec +30]
+            • SQL built from string concatenation or interpolation [sql-injection +25]
+            AI: likely real — the query interpolates req.query.id straight into SQL.
+
+MEDIUM  30  scripts/build.js:3
+            • Runs dynamic code or shell commands [dangerous-exec +30]
+            AI: likely false positive — execSync runs a fixed "npm run build" string.
+```
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+riskdiff --ai
+RISKDIFF_AI_MODEL=claude-haiku-5-5 riskdiff --ai   # pick another model
+```
+
+- **Off unless you pass `--ai`.** Without it nothing leaves your machine.
+- **Scores and `--fail-on` don't change.** The verdict is an annotation (`ai` in JSON, a 🤖 line in Markdown), so CI gates stay deterministic.
+- Uses `claude-opus-5-5` at low effort by default. Any API problem (no key, rate limit, network) prints a warning and the report still comes out.
+
 ## 🧮 How scoring works
 
 1. The diff is split into **hunks** (the `@@ … @@` blocks).
@@ -252,9 +281,49 @@ Removal rules compare counts: if a hunk removes one `try` and adds one back, not
 
 ## 🔌 Integrations
 
-### 🤖 Claude Code skill
+### 🤖 Claude Code plugin
 
-The repo includes a skill that runs riskdiff and has Claude review the high and medium hunks with you.
+This repo is a Claude Code plugin marketplace. Install it once:
+
+```text
+/plugin marketplace add zeitgeistz/riskdiff
+/plugin install riskdiff@riskdiff
+```
+
+On Claude Code 2.1.275 or later, one line does both: `/plugin install riskdiff --marketplace zeitgeistz/riskdiff`.
+
+You get three things:
+
+| Part | What it does |
+|---|---|
+| **Hook** | After every `Edit` or `Write`, scans that file's uncommitted changes. If a hunk is medium or high risk, Claude sees the findings right away and either fixes them or explains why they're safe. Safe edits add nothing to the conversation. It never blocks an edit. |
+| **MCP tool** `riskdiff_scan` | Claude can scan any range on demand (`range`, `staged`, `checkPackages`, `minLevel`, `cwd`) and gets JSON back. |
+| **Skill** `/zeit-riskdiff` | Runs a full review: riskiest hunks first, with Claude explaining each one. |
+
+Everything runs locally with the plugin's own copy of riskdiff, so only Node.js is needed.
+
+<details>
+<summary><b>Without the plugin</b></summary>
+
+Use the hook on its own by adding this to `.claude/settings.json` (riskdiff installed globally):
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "riskdiff hook", "timeout": 30 }] }
+    ]
+  }
+}
+```
+
+Add the MCP server to any MCP client:
+
+```bash
+claude mcp add riskdiff -- npx -y github:zeitgeistz/riskdiff#v2.0.0 mcp
+```
+
+Or copy just the skill:
 
 ```bash
 # macOS / Linux
@@ -266,6 +335,8 @@ Copy-Item -Recurse skills\zeit-riskdiff $HOME\.claude\skills\
 
 Then type `/zeit-riskdiff` in Claude Code, or ask *"what's risky in this change?"*.
 
+</details>
+
 ### 🪝 Git pre-commit hook
 
 Block commits that contain high-risk changes:
@@ -273,7 +344,7 @@ Block commits that contain high-risk changes:
 ```bash
 cat > .git/hooks/pre-commit <<'EOF'
 #!/bin/sh
-npx -y github:zeitgeistz/riskdiff#v1.3.0 --staged --fail-on high
+npx -y github:zeitgeistz/riskdiff#v2.0.0 --staged --fail-on high
 EOF
 chmod +x .git/hooks/pre-commit
 ```
@@ -367,7 +438,7 @@ Locally, `riskdiff --sarif -o riskdiff.sarif` writes the same file.
 }
 ```
 
-`status` is `modified`, `added`, `deleted`, or `renamed`. `line` is the first changed line in the new file. `context` is the function name git prints in the hunk header, when there is one.
+`status` is `modified`, `added`, `deleted`, or `renamed`. `line` is the first changed line in the new file. `context` is the function name git prints in the hunk header, when there is one. With `--ai`, reviewed hunks also carry `"ai": { "verdict": "real" | "false-positive" | "unsure", "note": "..." }`.
 
 ## ❓ FAQ
 
@@ -380,7 +451,7 @@ No. It's a **triage** tool built on fast regex heuristics. It will miss things a
 <details>
 <summary><b>Does it send my code anywhere?</b></summary>
 
-No. It runs locally and uses no AI model. The only network call is the opt-in `--check-packages`, which sends package names (never code) to npm and PyPI.
+Not by default. It runs locally and the scoring uses no AI model. There are two opt-in network calls: `--check-packages` sends package names (never code) to npm and PyPI, and `--ai` sends the changed lines of up to 15 flagged hunks to the Anthropic API. The Claude Code hook and MCP tool never use `--ai`.
 </details>
 
 <details>
@@ -422,8 +493,13 @@ src/popular.js    Popular package names and libraries that do the same job
 src/rules.js      Built-in risk rules and weights
 src/config.js     .riskdiff.json loading, validation, globs
 src/score.js      Scores and sorts hunks, maps scores to levels
-src/report.js     Text, Markdown, and JSON output
+src/report.js     Text, Markdown, JSON, and SARIF output
+src/hook.js       Claude Code PostToolUse hook
+src/mcp.js        MCP server (stdio JSON-RPC)
+src/ai.js         Optional --ai second opinion (Anthropic API, plain fetch)
 schema/           JSON schema for .riskdiff.json
+.claude-plugin/   Plugin and marketplace manifests
+hooks/            Plugin hook config
 skills/           Claude Code skill
 test/             Tests (node:test)
 ```
@@ -442,6 +518,8 @@ test/             Tests (node:test)
 - [x] Ignore comments, and `riskdiff-ignore` directives (v1.1)
 - [x] GitHub Action with PR comments, job summary, and a gate (v1.3)
 - [x] SARIF output for code scanning (v1.3)
+- [x] Claude Code plugin: hook, MCP server, skill (v2.0)
+- [x] Optional AI second opinion with `--ai` (v2.0)
 - [ ] Published to npm as `riskdiff-cli` (the release workflow is ready; it publishes once an `NPM_TOKEN` secret is added)
 
 ## 📄 License
