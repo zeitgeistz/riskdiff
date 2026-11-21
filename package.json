@@ -1,6 +1,6 @@
 {
   "name": "riskdiff",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Rank the hunks of a git diff by how risky they are, so you review AI-written changes in the right order.",
   "type": "module",
   "bin": {
@@ -8,7 +8,8 @@
   },
   "files": [
     "bin",
-    "src"
+    "src",
+    "schema"
   ],
   "scripts": {
     "test": "node --test"

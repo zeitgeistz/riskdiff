@@ -1,11 +1,22 @@
-import { LEVELS } from './score.js';
+import { LEVELS, testTamper } from './score.js';
 
 const COLORS = { high: '\x1b[31m', medium: '\x1b[33m', low: '\x1b[36m', none: '\x1b[90m', dim: '\x1b[2m', bold: '\x1b[1m', reset: '\x1b[0m' };
 
 export function summarize(results) {
   const counts = { high: 0, medium: 0, low: 0, none: 0 };
   for (const r of results) counts[r.level]++;
-  return { files: new Set(results.map((r) => r.file)).size, hunks: results.length, ...counts };
+  return { files: new Set(results.map((r) => r.file)).size, hunks: results.length, ...counts, testTamper: testTamper(results) };
+}
+
+// "2 tests skipped, 1 assertion removed", or null when the tests were not weakened.
+export function tamperLine({ testTamper: t }) {
+  if (!t.total) return null;
+  const parts = [
+    [t.skipped, 'test skipped or focused', 'tests skipped or focused'],
+    [t.assertionsRemoved, 'hunk removed assertions', 'hunks removed assertions'],
+    [t.filesDeleted, 'test file deleted', 'test files deleted'],
+  ].filter(([n]) => n).map(([n, one, many]) => `${n} ${n === 1 ? one : many}`);
+  return `Tests weakened: ${parts.join(', ')}`;
 }
 
 export function formatText(results, { color = false, code = false } = {}) {
@@ -17,6 +28,8 @@ export function formatText(results, { color = false, code = false } = {}) {
       [c('high', `${s.high} high`), c('medium', `${s.medium} medium`), c('low', `${s.low} low`)].join(' · '),
     '',
   ];
+  const tamper = tamperLine(s);
+  if (tamper) out.push(c('medium', `⚠  ${tamper}`), '');
 
   const shown = results.filter((r) => r.score > 0);
   if (!shown.length) out.push(c('dim', 'No risky changes found.'));
@@ -45,6 +58,9 @@ export function formatMarkdown(results) {
     `**${s.files}** files · **${s.hunks}** hunks · 🔴 ${s.high} high · 🟠 ${s.medium} medium · 🔵 ${s.low} low`,
     '',
   ];
+  const tamper = tamperLine(s);
+  if (tamper) out.push(`> [!WARNING]
+> ${tamper}`, '');
   const shown = results.filter((r) => r.score > 0);
   if (!shown.length) return [...out, 'No risky changes found.', ''].join('\n');
 

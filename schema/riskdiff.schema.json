@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/zeitgeistz/riskdiff/main/schema/riskdiff.schema.json",
+  "title": "riskdiff config (.riskdiff.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "ignore": {
+      "description": "Glob patterns for files to skip. A pattern without \"/\" matches the file name in any directory.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rules": {
+      "description": "Disable a rule with false, or set its weight with a number.",
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [{ "const": false }, { "type": "integer", "minimum": 0 }]
+      }
+    },
+    "customRules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "weight", "reason"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "weight": { "type": "integer", "minimum": 0 },
+          "reason": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "description": "Regex matched against the file path" },
+          "added": { "type": "array", "items": { "type": "string" }, "description": "Regexes matched against added lines" },
+          "removed": { "type": "array", "items": { "type": "string" }, "description": "Regexes matched against removed lines" },
+          "flags": { "type": "string", "description": "Regex flags, e.g. \"i\"" },
+          "raw": { "type": "boolean", "description": "Match comments too (default: comments are stripped)" }
+        },
+        "oneOf": [{ "required": ["path"] }, { "required": ["added"] }, { "required": ["removed"] }]
+      }
+    },
+    "failOn": { "enum": ["low", "medium", "high"] },
+    "checkPackages": { "type": "boolean", "description": "Look up new npm and PyPI dependencies in their registries" }
+  }
+}

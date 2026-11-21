@@ -23,6 +23,8 @@ It's built for the moment an AI agent hands you 14 changed files and you have fi
 $ riskdiff
 riskdiff · 5 files, 5 hunks · 1 high · 2 medium · 1 low
 
+⚠  Tests weakened: 1 test skipped or focused, 1 hunk removed assertions
+
 HIGH    50  src/routes/admin.js:2
             +0 −1
             • Removes an authentication or permission check [auth-check-removed +50]
@@ -57,7 +59,9 @@ A big diff gets read top to bottom, and attention runs out before the dangerous 
 
 - 🧭 **Ranks hunks, not files.** Points you at `file:line`, not "somewhere in this 400-line file".
 - 🔍 **21 built-in rules** for security, data, tests, dependencies, and infrastructure.
-- 🧠 **Ignores moved code.** Removal rules only fire when something actually disappears, not when it's re-indented or moved inside the hunk.
+- 🧠 **Ignores moved code and comments.** Removal rules only fire when something actually disappears, and `// don't use eval()` isn't a call to `eval`.
+- 🧪 **Test tamper warning.** One line tells you when a diff skipped tests, removed assertions, or deleted test files.
+- ⚙️ **Configurable.** Ignore paths, turn rules off, change weights, and add your own rules in `.riskdiff.json`, or silence one hunk with `riskdiff-ignore`.
 - 📦 **Zero dependencies.** Only Node.js and git.
 - 🖥️ **Three output formats:** colored terminal, JSON for tools and agents, Markdown for PR comments.
 - 🚦 **CI gate:** `--fail-on high` exits with code 1.
@@ -79,7 +83,7 @@ riskdiff
 ## 📖 Usage
 
 ```bash
-riskdiff                     # working tree + staged changes vs HEAD
+riskdiff                     # working tree + staged + untracked changes vs HEAD
 riskdiff --staged            # staged changes only (what you're about to commit)
 riskdiff main...HEAD         # everything on this branch since it left main
 riskdiff HEAD~3              # any range git diff accepts
@@ -93,14 +97,63 @@ riskdiff - < change.patch    # or from a file
 | `--md` | Markdown table, ready for a PR comment |
 | `--code` | Print the changed lines under each hunk |
 | `--fail-on <level>` | Exit with code `1` if any hunk is at or above `low`, `medium`, or `high` |
+| `--config <path>` | Use this config file instead of `.riskdiff.json` in the repo root |
+| `--no-untracked` | Leave out untracked files (included by default when no range is given) |
 | `--no-color` | Disable colors (also respects `NO_COLOR`) |
 | `-h`, `--help` | Show help |
 | `-v`, `--version` | Show version |
 
-**Exit codes:** `0` OK · `1` `--fail-on` threshold reached · `2` usage or git error.
+**Exit codes:** `0` OK · `1` `--fail-on` threshold reached · `2` usage, config, or git error.
 
-> [!NOTE]
-> `git diff` doesn't include untracked files. Run `git add -N <file>` to include new files without staging their content.
+Untracked files that aren't in `.gitignore` are included as new files. Binary files and files over 1 MB are skipped.
+
+## ⚙️ Configuration
+
+Put a `.riskdiff.json` in your repo root. Every key is optional.
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/zeitgeistz/riskdiff/main/schema/riskdiff.schema.json",
+  "ignore": ["dist/**", "*.min.js", "**/__snapshots__/**"],
+  "rules": {
+    "todo-added": false,
+    "new-dependency": 25
+  },
+  "customRules": [
+    {
+      "id": "no-console",
+      "weight": 5,
+      "reason": "Adds console.log",
+      "added": ["console\\.log\\("]
+    }
+  ],
+  "failOn": "high"
+}
+```
+
+| Key | What it does |
+|---|---|
+| `ignore` | Globs for files to skip. `**` matches any folders, `*` anything except `/`. A pattern with no `/` matches the file name anywhere, like `.gitignore`. |
+| `rules` | `false` turns a rule off. A number sets its weight. |
+| `customRules` | Your own rules. Each needs `id`, `weight`, `reason`, and exactly one of `path` (regex string), `added`, or `removed` (arrays of regex strings). Optional: `flags` (e.g. `"i"`) and `raw: true` to also match inside comments. |
+| `failOn` | Default for `--fail-on`. The flag wins when both are set. |
+
+riskdiff exits with code `2` and a clear message if the config has an unknown key, a bad regex, or a rule id that doesn't exist.
+
+## 🙈 Ignoring a finding
+
+Add `riskdiff-ignore` in a comment on any added line of the hunk:
+
+```js
+// riskdiff-ignore auth-check-removed: auth now runs in the gateway middleware
+router.get('/users', listUsers);
+```
+
+- `riskdiff-ignore rule-a, rule-b` silences those rules for that hunk.
+- `riskdiff-ignore` on its own silences every rule for that hunk.
+- Anything after the rule ids is free text, so you can leave the reason for reviewers.
+
+Comments are otherwise ignored: `// don't call eval()` doesn't count as calling `eval`, and deleting a commented-out `requireAuth` doesn't count as removing an auth check. Two rules still read comments on purpose: `hardcoded-secret` (a key in a comment still leaks) and `todo-added`.
 
 ## 🔍 What it catches
 
@@ -278,7 +331,7 @@ No rule matched it. riskdiff only knows the patterns in the tables above, so "no
 <details>
 <summary><b>Can I add my own rules or change weights?</b></summary>
 
-Not through config yet. Rules live in [`src/rules.js`](src/rules.js). Each one is a small object with a path regex, added-line regexes, removed-line regexes, or a `match` function, so a fork or PR is easy.
+Yes. Use `rules` and `customRules` in [`.riskdiff.json`](#%EF%B8%8F-configuration). Built-in rules live in [`src/rules.js`](src/rules.js) if you want to contribute one.
 </details>
 
 ## 🛠️ Development
@@ -291,11 +344,17 @@ node bin/riskdiff.js --help
 ```
 
 ```text
-bin/riskdiff.js   CLI: argument parsing, reading the diff, exit codes
+bin/riskdiff.js   CLI: argument parsing, output, exit codes
+src/analyze.js    The pipeline: config → git diff → parse → score
+src/git.js        Reading diffs, untracked files, and new file contents from git
 src/diff.js       Unified diff parser → files and hunks
-src/rules.js      Risk rules and weights
+src/source.js     Comment stripping and riskdiff-ignore directives
+src/deps.js       Finds the dependencies a manifest hunk adds
+src/rules.js      Built-in risk rules and weights
+src/config.js     .riskdiff.json loading, validation, globs
 src/score.js      Scores and sorts hunks, maps scores to levels
 src/report.js     Text, Markdown, and JSON output
+schema/           JSON schema for .riskdiff.json
 skills/           Claude Code skill
 test/             Tests (node:test)
 ```
@@ -309,8 +368,9 @@ test/             Tests (node:test)
 ## 🗺️ Roadmap
 
 - [ ] **Package check:** verify that new dependencies exist in the registry and flag very new or look-alike packages (slopsquatting)
-- [ ] Config file for custom rules, weights, and ignored paths
-- [ ] Include untracked files without `git add -N`
+- [x] Config file for custom rules, weights, and ignored paths (v1.1)
+- [x] Include untracked files (v1.1)
+- [x] Ignore comments, and `riskdiff-ignore` directives (v1.1)
 - [ ] Published to npm (`npx riskdiff`)
 
 ## 📄 License

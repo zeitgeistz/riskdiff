@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 — 2026-11-21
+
+- **Comments are ignored.** Code rules no longer fire on comments (`// don't use eval()`), and removing commented-out code isn't treated as removing a check. `hardcoded-secret` and `todo-added` still read comments.
+- **`riskdiff-ignore`** comment on an added line silences named rules (or all rules) for that hunk, with room for a reason.
+- **`.riskdiff.json` config:** `ignore` globs, turn rules off or change weights with `rules`, add `customRules`, and set a default `failOn`. Invalid config exits with code 2 and a clear message. JSON schema in `schema/`.
+- **Untracked files** are included by default when no range is given. `--no-untracked` turns this off.
+- **Test tamper warning** at the top of text and Markdown output when a diff skips tests, removes assertions, or deletes test files. Also in JSON as `summary.testTamper`.
+- **Better dependency detection:** `package.json` is read from the new side of the diff, so `scripts` and metadata are no longer mistaken for dependencies. JSON hunks now list `deps`.
+- New `--config <path>` option.
+
 ## 1.0.0 — 2026-11-21
 
 First release.

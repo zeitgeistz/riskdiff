@@ -1,11 +1,14 @@
 // Risk rules. Each rule matches a hunk by file path, added lines, or removed lines.
 // A rule counts at most once per hunk; the hunk score is the sum of matched weights.
+//
+// Line rules see code with comments stripped (hunk.addedCode / hunk.removedCode),
+// unless the rule sets `raw: true` because what it looks for can live in comments.
 
-const TEST_PATH = /(^|\/)(tests?|__tests__|spec)\/|\.(test|spec)\.[a-z]+$|_test\.(go|py)$|(^|\/)test_[^/]+\.py$/i;
-const MANIFEST = /(^|\/)(package\.json|requirements[^/]*\.txt|pyproject\.toml|Pipfile|go\.mod|Cargo\.toml|Gemfile|composer\.json|pom\.xml|build\.gradle(\.kts)?)$/;
+export const TEST_PATH = /(^|\/)(tests?|__tests__|spec)\/|\.(test|spec)\.[a-z]+$|_test\.(go|py)$|(^|\/)test_[^/]+\.py$/i;
+export const MANIFEST = /(^|\/)(package\.json|requirements[^/]*\.txt|pyproject\.toml|Pipfile|go\.mod|Cargo\.toml|Gemfile|composer\.json|pom\.xml|build\.gradle(\.kts)?)$/;
 const LOCKFILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Pipfile\.lock|go\.sum|Cargo\.lock|Gemfile\.lock|composer\.lock)$/;
 
-export const rules = [
+export const builtinRules = [
   // --- Sensitive areas (by path) ---
   {
     id: 'auth-code',
@@ -55,6 +58,7 @@ export const rules = [
     id: 'hardcoded-secret',
     weight: 50,
     reason: 'Looks like a hardcoded secret or API key',
+    raw: true,
     added: [
       /(api[_-]?key|secret|passw(or)?d|token|private[_-]?key)["']?\s*[:=]\s*["'][^"'\s]{8,}["']/i,
       /\b(AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]{10,})\b/,
@@ -127,12 +131,13 @@ export const rules = [
     id: 'new-dependency',
     weight: 15,
     reason: 'Adds or changes a dependency',
-    match: (file, hunk) => MANIFEST.test(file.path) && hunk.added.some(isDependencyLine),
+    match: (file, hunk) => (hunk.deps ?? []).length > 0,
   },
   {
     id: 'todo-added',
     weight: 5,
     reason: 'Adds a TODO, FIXME, or HACK',
+    raw: true,
     added: [/\b(TODO|FIXME|HACK|XXX)\b/],
   },
 
@@ -150,20 +155,20 @@ export const rules = [
     id: 'error-handling-removed',
     weight: 20,
     reason: 'Removes error handling',
-    match: (file, hunk) => removedMore(file, hunk, /\b(try|catch|except|finally|throw|raise|rescue)\b|if\s+err\s*!=\s*nil/),
+    removed: [/\b(try|catch|except|finally|throw|raise|rescue)\b|if\s+err\s*!=\s*nil/],
   },
   {
     id: 'validation-removed',
     weight: 20,
     reason: 'Removes input validation or sanitizing',
-    match: (file, hunk) => removedMore(file, hunk, /\b(validate\w*|sanitiz\w*|escape\w*|assertValid\w*)\s*\(|\.parse\(|zod|Joi\./i),
+    removed: [/\b(validate\w*|sanitiz\w*|escape\w*|assertValid\w*)\s*\(|\.parse\(|zod|Joi\./i],
   },
   {
     id: 'assertion-removed',
     weight: 20,
     reason: 'Removes test assertions',
-    match: (file, hunk) =>
-      TEST_PATH.test(file.path) && removedMore(file, hunk, /\b(expect|assert\w*|should)\b[.(]|^\s*assert\s|\bself\.assert\w+\(/),
+    testsOnly: true,
+    removed: [/\b(expect|assert\w*|should)\b[.(]|^\s*assert\s|\bself\.assert\w+\(/],
   },
   {
     id: 'test-file-deleted',
@@ -173,30 +178,27 @@ export const rules = [
   },
 ];
 
-// True when the pattern appears on more removed lines than added lines,
-// so moving or rewording the same code does not count as removal.
-// Deleted files are covered by their own rules, so they never count here.
-function removedMore(file, hunk, pattern) {
-  if (file.status === 'deleted') return false;
-  const count = (lines) => lines.filter((l) => pattern.test(l)).length;
-  return count(hunk.removed) > count(hunk.added);
-}
-
-function isDependencyLine(line) {
-  const t = line.trim();
-  return (
-    /^"[@\w./-]+"\s*:\s*"[~^<>=*\d\w.:/#-]+",?$/.test(t) || // package.json, composer.json
-    /^[A-Za-z0-9_.-]+(\[[\w,]+\])?\s*(==|>=|<=|~=|>|<|!=)/.test(t) || // requirements.txt
-    /^[A-Za-z0-9_.-]+\s*=\s*["{]/.test(t) || // pyproject.toml, Cargo.toml
-    /^(require\s+)?[\w.-]+\.[a-z]{2,}\/\S+\s+v\d/.test(t) || // go.mod
-    /^gem\s+["']/.test(t) // Gemfile
-  );
-}
-
 export function matchRule(rule, file, hunk) {
+  if (rule.testsOnly && !TEST_PATH.test(file.path ?? '')) return false;
   if (rule.match) return rule.match(file, hunk);
   if (rule.path) return rule.path.test(file.path ?? '');
-  if (rule.added) return hunk.added.some((l) => rule.added.some((p) => p.test(l)));
-  if (rule.removed) return rule.removed.some((p) => removedMore(file, hunk, p));
+  if (rule.added) {
+    const lines = rule.raw ? hunk.added : hunk.addedCode;
+    return lines.some((l) => rule.added.some((p) => p.test(l)));
+  }
+  if (rule.removed) {
+    // Deleted files are covered by their own rules, so they never count here.
+    if (file.status === 'deleted') return false;
+    const removed = rule.raw ? hunk.removed : hunk.removedCode;
+    const added = rule.raw ? hunk.added : hunk.addedCode;
+    return rule.removed.some((p) => removedMore(removed, added, p));
+  }
   return false;
+}
+
+// True when the pattern appears on more removed lines than added lines,
+// so moving or rewording the same code does not count as removal.
+function removedMore(removed, added, pattern) {
+  const count = (lines) => lines.filter((l) => pattern.test(l)).length;
+  return count(removed) > count(added);
 }

@@ -17,7 +17,7 @@ description: Rank the current git changes by risk with the riskdiff CLI and revi
 
    ```bash
    riskdiff --json            # if installed globally
-   npx -y github:zeitgeistz/riskdiff#v1.0.0 --json   # otherwise
+   npx -y github:zeitgeistz/riskdiff --json   # otherwise
    ```
 
 3. For every hunk with `level` of `high` or `medium`, open the file at `file:line`, read the change, and decide whether the finding is a real problem or a false positive.
@@ -29,5 +29,6 @@ description: Rank the current git changes by risk with the riskdiff CLI and revi
 
 ## Notes
 
-- Untracked files are not in `git diff`. Run `git add -N <file>` first to include new files.
+- With no range, untracked files are included. Pass `--no-untracked` to leave them out.
+- If a finding is a known false positive the user accepts, suggest a `// riskdiff-ignore <rule-id>: <reason>` comment or a `.riskdiff.json` entry instead of ignoring it silently.
 - A score is a prompt to look, not a verdict. Never claim something is safe only because riskdiff scored it low.

@@ -1,9 +1,7 @@
 #!/usr/bin/env node
-import { execFileSync } from 'node:child_process';
 import { fstatSync, readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
-import { parseDiff } from '../src/diff.js';
-import { scoreFiles } from '../src/score.js';
+import { analyze } from '../src/analyze.js';
 import { formatText, formatMarkdown, formatJson, atOrAbove } from '../src/report.js';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -11,7 +9,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
 const HELP = `riskdiff ${VERSION} — rank the hunks of a diff by how risky they are to merge
 
 Usage
-  riskdiff                    Working tree and staged changes vs HEAD
+  riskdiff                    Working tree, staged, and untracked changes vs HEAD
   riskdiff --staged           Staged changes only
   riskdiff <git-diff-args>    Any git diff range, e.g. main...HEAD
   git diff | riskdiff         Read a diff from stdin (or pass "-")
@@ -21,11 +19,13 @@ Options
   --md                    Markdown table (for PR comments)
   --code                  Show the changed lines under each hunk
   --fail-on <level>       Exit 1 if any hunk is at or above low|medium|high
+  --config <path>         Config file (default: .riskdiff.json in the repo root)
+  --no-untracked          Leave out untracked files
   --no-color              Disable colors
   -h, --help              Show help
   -v, --version           Show version`;
 
-function main() {
+async function main() {
   let args;
   try {
     args = parseArgs({
@@ -36,6 +36,8 @@ function main() {
         md: { type: 'boolean' },
         code: { type: 'boolean' },
         'fail-on': { type: 'string' },
+        config: { type: 'string' },
+        'no-untracked': { type: 'boolean' },
         'no-color': { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
         version: { type: 'boolean', short: 'v' },
@@ -52,38 +54,27 @@ function main() {
     return fail(`--fail-on must be low, medium, or high (got "${opts['fail-on']}")`);
   }
 
-  let diffText;
+  const fromStdin = positionals[0] === '-' || (!positionals.length && !opts.staged && stdinIsPiped());
+  let results, config;
   try {
-    diffText = readDiff(opts, positionals);
+    ({ results, config } = await analyze({
+      diffText: fromStdin ? readFileSync(0, 'utf8') : undefined,
+      mode: opts.staged ? 'staged' : positionals.length ? 'range' : 'worktree',
+      args: positionals,
+      configPath: opts.config,
+      untracked: !opts['no-untracked'],
+    }));
   } catch (err) {
     return fail(err.message);
   }
 
-  const results = scoreFiles(parseDiff(diffText));
+  const failOn = opts['fail-on'] ?? config.failOn;
   const color = !opts['no-color'] && !process.env.NO_COLOR && process.stdout.isTTY;
-
   if (opts.json) console.log(formatJson(results));
   else if (opts.md) console.log(formatMarkdown(results));
   else console.log(formatText(results, { color, code: opts.code }));
 
-  if (opts['fail-on'] && results.some((r) => r.score > 0 && atOrAbove(r.level, opts['fail-on']))) {
-    process.exitCode = 1;
-  }
-}
-
-function readDiff(opts, positionals) {
-  if (positionals[0] === '-' || (!positionals.length && !opts.staged && stdinIsPiped())) {
-    return readFileSync(0, 'utf8');
-  }
-  const base = ['diff', '--no-color', '--no-ext-diff', '-M'];
-  if (opts.staged) return git([...base, '--cached', ...positionals]);
-  if (positionals.length) return git([...base, ...positionals]);
-  try {
-    return git([...base, 'HEAD']);
-  } catch {
-    // No commits yet: fall back to staged + unstaged.
-    return git([...base, '--cached']) + git(base);
-  }
+  if (failOn && results.some((r) => r.score > 0 && atOrAbove(r.level, failOn))) process.exitCode = 1;
 }
 
 function stdinIsPiped() {
@@ -92,15 +83,6 @@ function stdinIsPiped() {
     return stat.isFIFO() || stat.isFile();
   } catch {
     return false;
-  }
-}
-
-function git(args) {
-  try {
-    return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
-  } catch (err) {
-    const msg = err.stderr?.toString().trim() || err.message;
-    throw new Error(`git ${args.join(' ')} failed: ${msg}`);
   }
 }
 

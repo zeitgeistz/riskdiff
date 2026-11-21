@@ -1,24 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import { parseDiff } from '../src/diff.js';
 import { scoreFiles } from '../src/score.js';
 import { formatMarkdown, formatJson } from '../src/report.js';
-
-const CLI = fileURLToPath(new URL('../bin/riskdiff.js', import.meta.url));
-
-function diffOf(path, { added = [], removed = [], context = [], status } = {}) {
-  const head = [`diff --git a/${path} b/${path}`];
-  if (status === 'added') head.push('new file mode 100644', '--- /dev/null', `+++ b/${path}`);
-  else if (status === 'deleted') head.push('deleted file mode 100644', `--- a/${path}`, '+++ /dev/null');
-  else head.push(`--- a/${path}`, `+++ b/${path}`);
-  const body = [...context.map((l) => ' ' + l), ...removed.map((l) => '-' + l), ...added.map((l) => '+' + l)];
-  head.push(`@@ -10,${context.length + removed.length} +10,${context.length + added.length} @@ function x() {`);
-  return [...head, ...body].join('\n');
-}
-
-const ids = (text) => scoreFiles(parseDiff(text)).flatMap((r) => r.findings.map((f) => f.id));
+import { CLI, diffOf, ids } from './helpers.js';
 
 test('parses files, status, and hunk line numbers', () => {
   const text = [
