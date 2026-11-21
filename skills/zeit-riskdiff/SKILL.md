@@ -13,7 +13,7 @@ description: Rank the current git changes by risk with the riskdiff CLI and revi
    - Uncommitted work (default): no arguments.
    - Staged only: `--staged`.
    - A branch or PR: a range such as `main...HEAD`.
-2. Run it with JSON output:
+2. Run it with JSON output. Add `--check-packages` when the diff touches a dependency manifest:
 
    ```bash
    riskdiff --json            # if installed globally

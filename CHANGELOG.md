@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 — 2026-11-21
+
+- **Package check.** Two new offline rules: `package-lookalike` (a new npm/PyPI dependency one or two edits from a popular package) and `duplicate-dependency` (a new library that does the same job as one already in the manifest).
+- **`--check-packages`** (or `"checkPackages": true`) looks new npm and PyPI dependencies up in their registries and adds `package-not-found`, `package-new`, `package-low-downloads`, and `package-deprecated`. Only package names are sent. Unreachable registries produce a warning, not a failure.
+- Rule reasons can now name the specific package or library involved.
+
 ## 1.1.0 — 2026-11-21
 
 - **Comments are ignored.** Code rules no longer fire on comments (`// don't use eval()`), and removing commented-out code isn't treated as removing a check. `hardcoded-secret` and `todo-added` still read comments.

@@ -3,6 +3,8 @@
 //
 // Line rules see code with comments stripped (hunk.addedCode / hunk.removedCode),
 // unless the rule sets `raw: true` because what it looks for can live in comments.
+// A `match` function may return a string, which replaces the reason with specifics.
+import { lookalike, sameJob } from './packages.js';
 
 export const TEST_PATH = /(^|\/)(tests?|__tests__|spec)\/|\.(test|spec)\.[a-z]+$|_test\.(go|py)$|(^|\/)test_[^/]+\.py$/i;
 export const MANIFEST = /(^|\/)(package\.json|requirements[^/]*\.txt|pyproject\.toml|Pipfile|go\.mod|Cargo\.toml|Gemfile|composer\.json|pom\.xml|build\.gradle(\.kts)?)$/;
@@ -133,6 +135,44 @@ export const builtinRules = [
     reason: 'Adds or changes a dependency',
     match: (file, hunk) => (hunk.deps ?? []).length > 0,
   },
+  {
+    id: 'package-lookalike',
+    weight: 30,
+    reason: 'New dependency name looks like a popular package',
+    match: (file, hunk) => {
+      const hits = (hunk.deps ?? []).map((d) => [d.name, lookalike(d)]).filter(([, p]) => p);
+      return hits.length > 0 && hits.map(([n, p]) => `${n} looks like ${p}; check it is the package you meant`).join('; ');
+    },
+  },
+  {
+    id: 'duplicate-dependency',
+    weight: 15,
+    reason: 'Adds a library that does the same job as one already in the project',
+    match: (file, hunk) => {
+      const byJob = new Map();
+      for (const d of hunk.deps ?? []) {
+        const hit = sameJob(d, hunk.projectDeps ?? hunk.deps);
+        if (!hit) continue;
+        const entry = byJob.get(hit.job) ?? { added: new Set(), others: new Set() };
+        entry.added.add(d.name);
+        for (const o of hit.others) entry.others.add(o);
+        byJob.set(hit.job, entry);
+      }
+      const addedNames = new Set((hunk.deps ?? []).map((d) => d.name.toLowerCase()));
+      const messages = [...byJob].map(([job, { added, others }]) => {
+        const existing = [...others].filter((o) => !addedNames.has(o));
+        return existing.length
+          ? `Adds ${[...added].join(' and ')}, but the project already has ${existing.join(', ')} (${job})`
+          : `Adds ${[...added].join(' and ')}, which do the same job (${job})`;
+      });
+      return messages.length > 0 && messages.join('; ');
+    },
+  },
+  // Registry rules: filled in by checkPackages() when --check-packages is on.
+  { id: 'package-not-found', weight: 50, reason: 'Dependency does not exist in its registry', online: true, match: () => false },
+  { id: 'package-new', weight: 30, reason: 'Dependency was first published in the last 30 days', online: true, match: () => false },
+  { id: 'package-low-downloads', weight: 15, reason: 'Dependency has very few downloads', online: true, match: () => false },
+  { id: 'package-deprecated', weight: 15, reason: 'Dependency is deprecated or yanked', online: true, match: () => false },
   {
     id: 'todo-added',
     weight: 5,

@@ -1,6 +1,6 @@
 import { builtinRules, matchRule, MANIFEST } from './rules.js';
 import { commentStyle, stripComments, ignoredRules } from './source.js';
-import { addedDeps } from './deps.js';
+import { addedDeps, allDeps } from './deps.js';
 
 export const LEVELS = ['none', 'low', 'medium', 'high'];
 const TEST_RULES = new Set(['test-skipped', 'assertion-removed', 'test-file-deleted']);
@@ -23,7 +23,7 @@ export function scoreFiles(files, { rules = builtinRules, include = () => true, 
     if (file.binary || !include(file.path ?? '')) continue;
     const style = commentStyle(file.path);
     const isManifest = MANIFEST.test(file.path ?? '');
-    let manifest;
+    let manifest, projectDeps;
     // A deleted file with no hunks (e.g. empty) still deserves a row.
     const hunks = file.hunks.length ? file.hunks : [{ header: '', context: '', line: 1, added: [], removed: [] }];
 
@@ -31,14 +31,21 @@ export function scoreFiles(files, { rules = builtinRules, include = () => true, 
       hunk.addedCode = hunk.added.map((l) => stripComments(l, style));
       hunk.removedCode = hunk.removed.map((l) => stripComments(l, style));
       if (isManifest) {
-        manifest ??= readNew(file.path);
+        if (manifest === undefined) {
+          manifest = readNew(file.path);
+          projectDeps = allDeps(file.path, manifest);
+        }
         hunk.deps = addedDeps(file.path, hunk.added, manifest);
+        hunk.projectDeps = projectDeps.length ? projectDeps : hunk.deps;
       }
       const ignored = ignoredRules(hunk.added, knownIds);
 
-      const findings = ignored === 'all' ? [] : rules
-        .filter((rule) => !ignored?.has(rule.id) && matchRule(rule, file, hunk))
-        .map(({ id, weight, reason }) => ({ id, weight, reason }));
+      const findings = [];
+      for (const rule of ignored === 'all' ? [] : rules) {
+        if (ignored?.has(rule.id)) continue;
+        const hit = matchRule(rule, file, hunk);
+        if (hit) findings.push({ id: rule.id, weight: rule.weight, reason: typeof hit === 'string' ? hit : rule.reason });
+      }
 
       const changed = hunk.added.length + hunk.removed.length;
       // Big hunks are harder to review; lockfile churn is not.

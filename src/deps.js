@@ -24,6 +24,20 @@ export function addedDeps(path, addedLines, newContent) {
   return [];
 }
 
+// Every dependency declared in a manifest's full content.
+export function allDeps(path, content) {
+  if (!content) return [];
+  if (path.split('/').pop() === 'package.json') {
+    try {
+      const pkg = JSON.parse(content);
+      return [...new Set(NPM_DEP_SECTIONS.flatMap((s) => Object.keys(pkg[s] ?? {})))].map((name) => ({ name, ecosystem: 'npm' }));
+    } catch {
+      // Fall through to the line-based reading.
+    }
+  }
+  return addedDeps(path, content.split(/\r?\n/), content);
+}
+
 function npmDeps(lines, content) {
   let declared = null;
   if (content) {

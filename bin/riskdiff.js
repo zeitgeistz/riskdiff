@@ -19,6 +19,7 @@ Options
   --md                    Markdown table (for PR comments)
   --code                  Show the changed lines under each hunk
   --fail-on <level>       Exit 1 if any hunk is at or above low|medium|high
+  --check-packages        Look new npm/PyPI dependencies up in their registries
   --config <path>         Config file (default: .riskdiff.json in the repo root)
   --no-untracked          Leave out untracked files
   --no-color              Disable colors
@@ -37,6 +38,7 @@ async function main() {
         code: { type: 'boolean' },
         'fail-on': { type: 'string' },
         config: { type: 'string' },
+        'check-packages': { type: 'boolean' },
         'no-untracked': { type: 'boolean' },
         'no-color': { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
@@ -55,19 +57,23 @@ async function main() {
   }
 
   const fromStdin = positionals[0] === '-' || (!positionals.length && !opts.staged && stdinIsPiped());
-  let results, config;
+  let results, config, packageCheck;
   try {
-    ({ results, config } = await analyze({
+    ({ results, config, packageCheck } = await analyze({
       diffText: fromStdin ? readFileSync(0, 'utf8') : undefined,
       mode: opts.staged ? 'staged' : positionals.length ? 'range' : 'worktree',
       args: positionals,
       configPath: opts.config,
       untracked: !opts['no-untracked'],
+      packages: opts['check-packages'],
     }));
   } catch (err) {
     return fail(err.message);
   }
 
+  if (packageCheck?.failed) {
+    console.error(`riskdiff: could not reach the registry for ${packageCheck.failed} package${packageCheck.failed === 1 ? '' : 's'}; they were not checked`);
+  }
   const failOn = opts['fail-on'] ?? config.failOn;
   const color = !opts['no-color'] && !process.env.NO_COLOR && process.stdout.isTTY;
   if (opts.json) console.log(formatJson(results));

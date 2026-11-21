@@ -1,0 +1,60 @@
+// Widely used package names, for spotting look-alike (typosquat or hallucinated) names
+// and for knowing which libraries do the same job.
+
+export const POPULAR = {
+  npm: [
+    'react', 'react-dom', 'next', 'vue', 'svelte', 'angular', 'preact', 'solid-js', 'express', 'koa', 'fastify', 'hono',
+    'axios', 'node-fetch', 'got', 'superagent', 'undici', 'ky', 'request', 'lodash', 'underscore', 'ramda', 'moment',
+    'dayjs', 'date-fns', 'luxon', 'uuid', 'nanoid', 'chalk', 'commander', 'yargs', 'inquirer', 'debug', 'dotenv',
+    'cors', 'helmet', 'body-parser', 'cookie-parser', 'jsonwebtoken', 'bcrypt', 'bcryptjs', 'passport', 'mongoose',
+    'sequelize', 'typeorm', 'prisma', '@prisma/client', 'knex', 'pg', 'mysql2', 'sqlite3', 'redis', 'ioredis',
+    'socket.io', 'ws', 'zod', 'joi', 'yup', 'ajv', 'typescript', 'eslint', 'prettier', 'jest', 'mocha', 'chai',
+    'vitest', 'ava', 'sinon', 'supertest', 'webpack', 'vite', 'rollup', 'esbuild', 'parcel', 'babel-loader',
+    '@babel/core', 'tailwindcss', 'postcss', 'autoprefixer', 'sass', 'styled-components', 'classnames', 'clsx',
+    'redux', '@reduxjs/toolkit', 'zustand', 'mobx', 'jotai', 'immer', 'rxjs', 'graphql', 'apollo-server',
+    '@apollo/client', 'react-router', 'react-router-dom', 'react-query', '@tanstack/react-query', 'swr', 'formik',
+    'react-hook-form', 'framer-motion', 'three', 'd3', 'chart.js', 'recharts', 'puppeteer', 'playwright', 'cheerio',
+    'jsdom', 'sharp', 'multer', 'nodemailer', 'winston', 'pino', 'morgan', 'glob', 'minimist', 'semver', 'rimraf',
+    'mkdirp', 'fs-extra', 'chokidar', 'cross-env', 'concurrently', 'nodemon', 'ts-node', 'tsx', 'husky',
+    'lint-staged', 'jquery', 'bootstrap', 'marked', 'markdown-it', 'highlight.js', 'prismjs', 'openai',
+    '@anthropic-ai/sdk', 'langchain', 'stripe', 'aws-sdk', 'firebase', 'firebase-admin', 'mongodb', 'bluebird',
+    'async', 'qs', 'yaml', 'js-yaml', 'xml2js', 'csv-parse', 'papaparse', 'validator', 'sanitize-html',
+    'dompurify', 'crypto-js', 'jscodeshift', 'react-codemod', 'execa', 'ora', 'boxen', 'prompts', 'zx',
+  ],
+  pypi: [
+    'requests', 'httpx', 'aiohttp', 'urllib3', 'flask', 'django', 'fastapi', 'starlette', 'uvicorn', 'gunicorn',
+    'numpy', 'pandas', 'scipy', 'matplotlib', 'seaborn', 'plotly', 'scikit-learn', 'tensorflow', 'torch',
+    'torchvision', 'keras', 'transformers', 'openai', 'anthropic', 'langchain', 'pydantic', 'sqlalchemy',
+    'psycopg2', 'psycopg2-binary', 'psycopg', 'pymysql', 'redis', 'celery', 'boto3', 'botocore', 'pytest',
+    'pytest-cov', 'nose', 'tox', 'black', 'ruff', 'flake8', 'pylint', 'mypy', 'isort', 'click', 'typer',
+    'rich', 'tqdm', 'pyyaml', 'toml', 'tomli', 'python-dotenv', 'jinja2', 'markupsafe', 'werkzeug', 'pillow',
+    'opencv-python', 'beautifulsoup4', 'lxml', 'scrapy', 'selenium', 'playwright', 'pyjwt', 'cryptography',
+    'bcrypt', 'passlib', 'paramiko', 'arrow', 'pendulum', 'python-dateutil', 'pytz', 'six', 'attrs', 'marshmallow',
+    'alembic', 'pymongo', 'motor', 'grpcio', 'protobuf', 'setuptools', 'wheel', 'pip', 'poetry', 'virtualenv',
+    'jupyter', 'notebook', 'ipython', 'streamlit', 'gradio', 'networkx', 'sympy', 'nltk', 'spacy', 'xgboost',
+    'lightgbm', 'loguru', 'structlog', 'orjson', 'ujson', 'simplejson', 'docker', 'kubernetes', 'colorama',
+  ],
+};
+
+// Libraries that do the same job. Adding a second one is usually an agent not noticing the first.
+export const SAME_JOB = [
+  { job: 'HTTP client', npm: ['axios', 'node-fetch', 'got', 'superagent', 'request', 'ky', 'undici', 'cross-fetch'], pypi: ['requests', 'httpx', 'aiohttp', 'urllib3'] },
+  { job: 'date library', npm: ['moment', 'dayjs', 'date-fns', 'luxon'], pypi: ['arrow', 'pendulum'] },
+  { job: 'utility library', npm: ['lodash', 'underscore', 'ramda'] },
+  { job: 'ID generator', npm: ['uuid', 'nanoid', 'cuid', 'shortid'] },
+  { job: 'test runner', npm: ['jest', 'mocha', 'vitest', 'ava', 'jasmine', 'tap'], pypi: ['pytest', 'nose'] },
+  { job: 'schema validator', npm: ['zod', 'joi', 'yup', 'ajv', 'superstruct', 'valibot'], pypi: ['pydantic', 'marshmallow'] },
+  { job: 'CLI parser', npm: ['commander', 'yargs', 'minimist', 'meow', 'cac'], pypi: ['click', 'typer'] },
+  { job: 'logger', npm: ['winston', 'pino', 'bunyan', 'log4js'], pypi: ['loguru', 'structlog'] },
+  { job: 'password hashing', npm: ['bcrypt', 'bcryptjs', 'argon2'], pypi: ['bcrypt', 'passlib', 'argon2-cffi'] },
+  { job: 'state manager', npm: ['@reduxjs/toolkit', 'zustand', 'mobx', 'jotai', 'recoil', 'valtio'] },
+  { job: 'ORM', npm: ['sequelize', 'typeorm', 'prisma', 'mikro-orm', 'drizzle-orm', 'objection'] },
+  { job: 'Postgres driver', pypi: ['psycopg2', 'psycopg2-binary', 'psycopg', 'asyncpg'] },
+  { job: 'YAML parser', npm: ['yaml', 'js-yaml'], pypi: ['pyyaml', 'ruamel.yaml'] },
+  { job: 'JSON library', pypi: ['orjson', 'ujson', 'simplejson'] },
+  { job: 'build tool', npm: ['webpack', 'vite', 'rollup', 'parcel', 'esbuild'] },
+  { job: 'Redis client', npm: ['redis', 'ioredis'] },
+  { job: 'class name helper', npm: ['classnames', 'clsx'] },
+  { job: 'data fetching hook', npm: ['react-query', '@tanstack/react-query', 'swr'] },
+  { job: 'markdown parser', npm: ['marked', 'markdown-it', 'remark'] },
+];

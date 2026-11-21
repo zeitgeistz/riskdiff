@@ -58,7 +58,8 @@ A big diff gets read top to bottom, and attention runs out before the dangerous 
 ## ✨ Features
 
 - 🧭 **Ranks hunks, not files.** Points you at `file:line`, not "somewhere in this 400-line file".
-- 🔍 **21 built-in rules** for security, data, tests, dependencies, and infrastructure.
+- 🔍 **27 built-in rules** for security, data, tests, dependencies, and infrastructure.
+- 📦 **Package check.** Catches dependencies that don't exist, were published last week, look like a popular package, or duplicate a library you already use.
 - 🧠 **Ignores moved code and comments.** Removal rules only fire when something actually disappears, and `// don't use eval()` isn't a call to `eval`.
 - 🧪 **Test tamper warning.** One line tells you when a diff skipped tests, removed assertions, or deleted test files.
 - ⚙️ **Configurable.** Ignore paths, turn rules off, change weights, and add your own rules in `.riskdiff.json`, or silence one hunk with `riskdiff-ignore`.
@@ -133,6 +134,7 @@ Put a `.riskdiff.json` in your repo root. Every key is optional.
 
 | Key | What it does |
 |---|---|
+| `checkPackages` | `true` runs the [registry check](#-package-check) on every run. |
 | `ignore` | Globs for files to skip. `**` matches any folders, `*` anything except `/`. A pattern with no `/` matches the file name anywhere, like `.gitignore`. |
 | `rules` | `false` turns a rule off. A number sets its weight. |
 | `customRules` | Your own rules. Each needs `id`, `weight`, `reason`, and exactly one of `path` (regex string), `added`, or `removed` (arrays of regex strings). Optional: `flags` (e.g. `"i"`) and `raw: true` to also match inside comments. |
@@ -169,6 +171,8 @@ Comments are otherwise ignored: `// don't call eval()` doesn't count as calling 
 | `test-skipped` | 20 | `it.skip`, `.only`, `xit`, `@pytest.mark.skip`, `@Disabled`, `t.Skip()` |
 | `swallowed-error` | 15 | `catch (e) {}`, `except: pass`, `.catch(() => {})` |
 | `new-dependency` | 15 | New or changed entries in `package.json`, `requirements.txt`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `Gemfile`, and more |
+| `package-lookalike` | 30 | A new npm/PyPI dependency one or two letters away from a popular package (`reqeusts`, `expresss`) |
+| `duplicate-dependency` | 15 | A new library that does the same job as one you already have (`axios` next to `node-fetch`, `moment` next to `dayjs`) |
 | `todo-added` | 5 | New `TODO`, `FIXME`, `HACK`, `XXX` |
 
 ### Code that was removed
@@ -193,6 +197,36 @@ Comments are otherwise ignored: `// don't call eval()` doesn't count as calling 
 | `ci-infra` | 20 | `.github/workflows/`, `Dockerfile`, `docker-compose`, `*.tf`, `k8s/`, `helm/` |
 | `lockfile` | 3 | `package-lock.json`, `yarn.lock`, `poetry.lock`, `go.sum`, … |
 | `large-change` | 0–10 | +1 for every 25 changed lines in the hunk (not for lockfiles) |
+
+## 📦 Package check
+
+AI models invent package names, and attackers register those names on npm and PyPI to catch anyone who installs them ("slopsquatting"). Agents also add a new library instead of using the one already in the project.
+
+Two checks always run, offline:
+
+- **`package-lookalike`**: the name is one or two edits away from a popular package.
+- **`duplicate-dependency`**: the new library does the same job as one already in the manifest (HTTP clients, date libraries, test runners, validators, loggers, ORMs, and more).
+
+Add `--check-packages` (or `"checkPackages": true` in the config) to also look each new npm and PyPI dependency up in its registry:
+
+| Rule | Weight | Flags a dependency that… |
+|---|---:|---|
+| `package-not-found` | 50 | doesn't exist in the registry (hallucinated, or a private package) |
+| `package-new` | 30 | was first published in the last 30 days |
+| `package-low-downloads` | 15 | had fewer than 500 npm downloads last week |
+| `package-deprecated` | 15 | is deprecated on npm or yanked on PyPI |
+
+```text
+HIGH   110  requirements.txt:1
+            • reqeusts does not exist on PyPI; possibly a hallucinated name [package-not-found +50]
+            • reqeusts looks like requests; check it is the package you meant [package-lookalike +30]
+            • Adds or changes a dependency [new-dependency +15]
+            • Adds requests and httpx, which do the same job (HTTP client) [duplicate-dependency +15]
+```
+
+The check only sends package **names** to `registry.npmjs.org`, `api.npmjs.org`, and `pypi.org`. No code leaves your machine. If a registry can't be reached, riskdiff prints a warning on stderr and scores the rest as usual.
+
+For a private package that riskdiff reports as not found, turn the rule off in `.riskdiff.json` or add a `"//": "riskdiff-ignore package-not-found"` line next to it.
 
 ## 🧮 How scoring works
 
@@ -313,7 +347,7 @@ No. It's a **triage** tool built on fast regex heuristics. It will miss things a
 <details>
 <summary><b>Does it send my code anywhere?</b></summary>
 
-No. It runs locally, makes no network calls, and uses no AI model. Your code stays on your machine.
+No. It runs locally and uses no AI model. The only network call is the opt-in `--check-packages`, which sends package names (never code) to npm and PyPI.
 </details>
 
 <details>
@@ -350,6 +384,8 @@ src/git.js        Reading diffs, untracked files, and new file contents from git
 src/diff.js       Unified diff parser → files and hunks
 src/source.js     Comment stripping and riskdiff-ignore directives
 src/deps.js       Finds the dependencies a manifest hunk adds
+src/packages.js   Look-alike, duplicate, and registry checks for new dependencies
+src/popular.js    Popular package names and libraries that do the same job
 src/rules.js      Built-in risk rules and weights
 src/config.js     .riskdiff.json loading, validation, globs
 src/score.js      Scores and sorts hunks, maps scores to levels
@@ -367,7 +403,7 @@ test/             Tests (node:test)
 
 ## 🗺️ Roadmap
 
-- [ ] **Package check:** verify that new dependencies exist in the registry and flag very new or look-alike packages (slopsquatting)
+- [x] **Package check:** missing, brand-new, look-alike, and duplicate dependencies (v1.2)
 - [x] Config file for custom rules, weights, and ignored paths (v1.1)
 - [x] Include untracked files (v1.1)
 - [x] Ignore comments, and `riskdiff-ignore` directives (v1.1)
