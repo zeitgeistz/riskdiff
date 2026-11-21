@@ -19,7 +19,7 @@ It's built for the moment an AI agent hands you 14 changed files and you have fi
 
 ---
 
-<p align="center"><img src="docs/demo.svg" alt="riskdiff ranking the hunks of an AI-written diff, riskiest first" width="820"></p>
+<p align="center"><img src="docs/demo.gif" alt="riskdiff ranking the hunks of an AI-written diff, riskiest first" width="820"></p>
 
 In this diff the agent removed `requireAuth`, skipped a failing test instead of fixing it, swapped a parameterized query for string interpolation, added `reqeusts` (one typo away from `requests`) next to a second HTTP client, and added a package called `react-codeshift`, a name AI models are known to invent. The harmless formatting change in `src/format.js` scored 0 and is hidden.
 
