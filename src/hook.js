@@ -1,5 +1,6 @@
 // Claude Code PostToolUse hook: after Claude edits a file, scan that file's uncommitted
 // changes and hand any medium or high risk hunks back to Claude as extra context.
+import { realpathSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { analyze } from './analyze.js';
 import { formatText } from './report.js';
@@ -15,7 +16,10 @@ export async function runHook(input) {
   const root = repoRoot(cwd);
   if (!root) return null;
 
-  const rel = relative(root, isAbsolute(filePath) ? filePath : resolve(cwd, filePath)).split(sep).join('/');
+  // realpath on both sides: on Windows the hook's path may be a short 8.3 name while git
+  // reports the long one, and symlinked directories differ the same way elsewhere.
+  const abs = isAbsolute(filePath) ? filePath : resolve(cwd, filePath);
+  const rel = relative(real(root), real(abs)).split(sep).join('/');
   if (!rel || rel.startsWith('../')) return null;
 
   const { results } = await analyze({ mode: 'worktree', cwd: root });
@@ -28,4 +32,12 @@ export async function runHook(input) {
     formatText(risky, { code: true });
   if (text.length > MAX_CONTEXT) text = text.slice(0, MAX_CONTEXT) + '\n… (truncated; run riskdiff for the full report)';
   return { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } };
+}
+
+function real(path) {
+  try {
+    return realpathSync.native(path);
+  } catch {
+    return resolve(path);
+  }
 }
