@@ -16,8 +16,8 @@ description: Rank the current git changes by risk with the riskdiff CLI and revi
 2. If the `riskdiff_scan` MCP tool is available (the riskdiff plugin), call it with `range`/`staged` as needed. Otherwise run the CLI with JSON output. Either way, add package checking (`checkPackages: true` or `--check-packages`) when the diff touches a dependency manifest:
 
    ```bash
-   riskdiff --json            # if installed globally
-   npx -y github:zeitgeistz/riskdiff --json   # otherwise
+   riskdiff --json              # if installed globally
+   npx -y riskdiff-cli --json   # otherwise
    ```
 
 3. For every hunk with `level` of `high` or `medium`, open the file at `file:line`, read the change, and decide whether the finding is a real problem or a false positive.

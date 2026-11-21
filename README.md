@@ -8,6 +8,7 @@ riskdiff reads a `git diff`, scores every hunk for risk, and sorts the hunks ris
 It's built for the moment an AI agent hands you 14 changed files and you have five minutes to review them.
 
 [![CI](https://github.com/zeitgeistz/riskdiff/actions/workflows/ci.yml/badge.svg)](https://github.com/zeitgeistz/riskdiff/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/riskdiff-cli?color=cb3837&logo=npm)](https://www.npmjs.com/package/riskdiff-cli)
 [![Release](https://img.shields.io/github/v/release/zeitgeistz/riskdiff?color=blue)](https://github.com/zeitgeistz/riskdiff/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 ![Node](https://img.shields.io/badge/node-%E2%89%A518.11-339933?logo=node.js&logoColor=white)
@@ -54,10 +55,10 @@ Requires **Node.js 18.11+** and **git**.
 
 ```bash
 # Run without installing
-npx -y github:zeitgeistz/riskdiff
+npx -y riskdiff-cli
 
 # Or install globally
-npm install -g github:zeitgeistz/riskdiff
+npm install -g riskdiff-cli
 riskdiff
 ```
 
@@ -298,7 +299,7 @@ Use the hook on its own by adding this to `.claude/settings.json` (riskdiff inst
 Add the MCP server to any MCP client:
 
 ```bash
-claude mcp add riskdiff -- npx -y github:zeitgeistz/riskdiff#v2.0.0 mcp
+claude mcp add riskdiff -- npx -y riskdiff-cli@2 mcp
 ```
 
 Or copy just the skill:
@@ -322,7 +323,7 @@ Block commits that contain high-risk changes:
 ```bash
 cat > .git/hooks/pre-commit <<'EOF'
 #!/bin/sh
-npx -y github:zeitgeistz/riskdiff#v2.0.0 --staged --fail-on high
+npx -y riskdiff-cli@2 --staged --fail-on high
 EOF
 chmod +x .git/hooks/pre-commit
 ```
@@ -498,7 +499,7 @@ test/             Tests (node:test)
 - [x] SARIF output for code scanning (v1.3)
 - [x] Claude Code plugin: hook, MCP server, skill (v2.0)
 - [x] Optional AI second opinion with `--ai` (v2.0)
-- [ ] Published to npm as `riskdiff-cli` (the release workflow is ready; it publishes once an `NPM_TOKEN` secret is added)
+- [x] Published to npm as [`riskdiff-cli`](https://www.npmjs.com/package/riskdiff-cli), with provenance (v2.0)
 
 ## 🤝 Contributing
 
