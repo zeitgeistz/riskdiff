@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { fstatSync, readFileSync } from 'node:fs';
+import { fstatSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { analyze } from '../src/analyze.js';
-import { formatText, formatMarkdown, formatJson, atOrAbove } from '../src/report.js';
+import { formatText, formatMarkdown, formatJson, formatSarif, atOrAbove } from '../src/report.js';
+import { buildRules } from '../src/config.js';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -17,6 +18,8 @@ Usage
 Options
   --json                  Machine-readable output
   --md                    Markdown table (for PR comments)
+  --sarif                 SARIF 2.1.0 (for GitHub code scanning)
+  -o, --output <file>     Write the report to a file instead of stdout
   --code                  Show the changed lines under each hunk
   --fail-on <level>       Exit 1 if any hunk is at or above low|medium|high
   --check-packages        Look new npm/PyPI dependencies up in their registries
@@ -35,6 +38,8 @@ async function main() {
         staged: { type: 'boolean' },
         json: { type: 'boolean' },
         md: { type: 'boolean' },
+        sarif: { type: 'boolean' },
+        output: { type: 'string', short: 'o' },
         code: { type: 'boolean' },
         'fail-on': { type: 'string' },
         config: { type: 'string' },
@@ -52,6 +57,7 @@ async function main() {
 
   if (opts.help) return console.log(HELP);
   if (opts.version) return console.log(VERSION);
+  if ([opts.json, opts.md, opts.sarif].filter(Boolean).length > 1) return fail('use only one of --json, --md, --sarif');
   if (opts['fail-on'] && !['low', 'medium', 'high'].includes(opts['fail-on'])) {
     return fail(`--fail-on must be low, medium, or high (got "${opts['fail-on']}")`);
   }
@@ -75,10 +81,22 @@ async function main() {
     console.error(`riskdiff: could not reach the registry for ${packageCheck.failed} package${packageCheck.failed === 1 ? '' : 's'}; they were not checked`);
   }
   const failOn = opts['fail-on'] ?? config.failOn;
-  const color = !opts['no-color'] && !process.env.NO_COLOR && process.stdout.isTTY;
-  if (opts.json) console.log(formatJson(results));
-  else if (opts.md) console.log(formatMarkdown(results));
-  else console.log(formatText(results, { color, code: opts.code }));
+  const color = !opts.output && !opts['no-color'] && !process.env.NO_COLOR && process.stdout.isTTY;
+  let report;
+  if (opts.json) report = formatJson(results);
+  else if (opts.sarif) report = formatSarif(results, { version: VERSION, rules: buildRules(config) });
+  else if (opts.md) report = formatMarkdown(results);
+  else report = formatText(results, { color, code: opts.code });
+
+  if (opts.output) {
+    try {
+      writeFileSync(opts.output, `${report}\n`);
+    } catch (err) {
+      return fail(`cannot write ${opts.output}: ${err.message}`);
+    }
+  } else {
+    console.log(report);
+  }
 
   if (failOn && results.some((r) => r.score > 0 && atOrAbove(r.level, failOn))) process.exitCode = 1;
 }

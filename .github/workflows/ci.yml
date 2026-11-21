@@ -18,3 +18,32 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm test
+
+  # Runs this repo's own GitHub Action against its latest change.
+  action:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: riskdiff
+        uses: ./
+        with:
+          fail-on: ''
+          sarif: 'true'
+      - name: Check outputs
+        env:
+          HIGH: ${{ steps.riskdiff.outputs.high }}
+          REPORT: ${{ steps.riskdiff.outputs.report }}
+          SARIF: ${{ steps.riskdiff.outputs.sarif-file }}
+        run: |
+          test -n "$HIGH"
+          grep -q '<!-- riskdiff -->' "$REPORT"
+          node -e 'const s = require(process.argv[1]); if (s.version !== "2.1.0") process.exit(1)' "$SARIF"
+          echo "high=$HIGH, report and SARIF OK"

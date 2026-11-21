@@ -64,7 +64,8 @@ A big diff gets read top to bottom, and attention runs out before the dangerous 
 - 🧪 **Test tamper warning.** One line tells you when a diff skipped tests, removed assertions, or deleted test files.
 - ⚙️ **Configurable.** Ignore paths, turn rules off, change weights, and add your own rules in `.riskdiff.json`, or silence one hunk with `riskdiff-ignore`.
 - 📦 **Zero dependencies.** Only Node.js and git.
-- 🖥️ **Three output formats:** colored terminal, JSON for tools and agents, Markdown for PR comments.
+- 🖥️ **Four output formats:** colored terminal, JSON for tools and agents, Markdown for PR comments, SARIF for code scanning.
+- ⚙️ **GitHub Action:** `uses: zeitgeistz/riskdiff@v1` comments a risk table on every PR and fails the check on high risk.
 - 🚦 **CI gate:** `--fail-on high` exits with code 1.
 - 🤖 **Claude Code skill included**, so your agent can review its own changes.
 
@@ -96,6 +97,9 @@ riskdiff - < change.patch    # or from a file
 |---|---|
 | `--json` | Machine-readable output (see [JSON output](#-json-output)) |
 | `--md` | Markdown table, ready for a PR comment |
+| `--sarif` | SARIF 2.1.0 for GitHub code scanning (see [GitHub Action](#%EF%B8%8F-github-action)) |
+| `-o`, `--output <file>` | Write the report to a file instead of stdout |
+| `--check-packages` | Look new npm and PyPI dependencies up in their registries (see [Package check](#-package-check)) |
 | `--code` | Print the changed lines under each hunk |
 | `--fail-on <level>` | Exit with code `1` if any hunk is at or above `low`, `medium`, or `high` |
 | `--config <path>` | Use this config file instead of `.riskdiff.json` in the repo root |
@@ -269,14 +273,16 @@ Block commits that contain high-risk changes:
 ```bash
 cat > .git/hooks/pre-commit <<'EOF'
 #!/bin/sh
-npx -y github:zeitgeistz/riskdiff#v1.0.0 --staged --fail-on high
+npx -y github:zeitgeistz/riskdiff#v1.3.0 --staged --fail-on high
 EOF
 chmod +x .git/hooks/pre-commit
 ```
 
 Use `git commit --no-verify` to bypass it when you've reviewed the change.
 
-### ⚙️ GitHub Actions: PR comment + gate
+### ⚙️ GitHub Action
+
+Comments a risk table on every pull request (and keeps updating the same comment), writes it to the job summary, and fails the check on high-risk changes:
 
 ```yaml
 name: riskdiff
@@ -296,18 +302,45 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Report
-        run: npx -y github:zeitgeistz/riskdiff#v1.0.0 origin/${{ github.base_ref }}...HEAD --md > riskdiff.md
-
-      - name: Comment on PR
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh pr comment ${{ github.event.pull_request.number }} --body-file riskdiff.md --edit-last || gh pr comment ${{ github.event.pull_request.number }} --body-file riskdiff.md
-
-      - name: Fail on high risk
-        run: npx -y github:zeitgeistz/riskdiff#v1.0.0 origin/${{ github.base_ref }}...HEAD --fail-on high
+      - uses: zeitgeistz/riskdiff@v1
+        with:
+          fail-on: high
+          check-packages: true
 ```
+
+| Input | Default | Description |
+|---|---|---|
+| `base` | PR base branch | Ref to compare against. On `push` events the default is the previous commit. |
+| `fail-on` | `high` | Fail if any hunk is at or above `low`, `medium`, or `high`. `''` never fails. |
+| `comment` | `true` | Post or update a PR comment. Skipped quietly on fork PRs with read-only tokens. |
+| `check-packages` | `false` | Run the [registry check](#-package-check). |
+| `sarif` | `false` | Also write a SARIF file (see below). |
+| `github-token` | `github.token` | Token for the PR comment. |
+
+Outputs: `high`, `medium`, `low` (counts), `report` (Markdown path), and `sarif-file`.
+
+#### Code scanning (SARIF)
+
+Show findings as annotations on the PR diff and in the repo's **Security → Code scanning** tab:
+
+```yaml
+    permissions:
+      contents: read
+      pull-requests: write
+      security-events: write
+    steps:
+      # ...checkout and setup-node as above
+      - id: riskdiff
+        uses: zeitgeistz/riskdiff@v1
+        with:
+          sarif: true
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ steps.riskdiff.outputs.sarif-file }}
+```
+
+Locally, `riskdiff --sarif -o riskdiff.sarif` writes the same file.
 
 ## 🧾 JSON output
 
@@ -407,7 +440,9 @@ test/             Tests (node:test)
 - [x] Config file for custom rules, weights, and ignored paths (v1.1)
 - [x] Include untracked files (v1.1)
 - [x] Ignore comments, and `riskdiff-ignore` directives (v1.1)
-- [ ] Published to npm (`npx riskdiff`)
+- [x] GitHub Action with PR comments, job summary, and a gate (v1.3)
+- [x] SARIF output for code scanning (v1.3)
+- [ ] Published to npm as `riskdiff-cli` (the release workflow is ready; it publishes once an `NPM_TOKEN` secret is added)
 
 ## 📄 License
 

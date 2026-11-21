@@ -1,0 +1,146 @@
+name: riskdiff review order
+description: Rank the hunks of a pull request by risk, comment the table on the PR, and fail on high-risk changes.
+author: zeitgeistz
+branding:
+  icon: crosshair
+  color: red
+
+inputs:
+  base:
+    description: Base ref to compare against. Defaults to the PR base branch, or the previous commit on push.
+    required: false
+    default: ''
+  fail-on:
+    description: Fail the step if any hunk is at or above this level (low, medium, high). Empty to never fail.
+    required: false
+    default: high
+  comment:
+    description: Post or update a riskdiff comment on the pull request.
+    required: false
+    default: 'true'
+  check-packages:
+    description: Look new npm and PyPI dependencies up in their registries.
+    required: false
+    default: 'false'
+  sarif:
+    description: Also write a SARIF file for github/codeql-action/upload-sarif.
+    required: false
+    default: 'false'
+  github-token:
+    description: Token used to post the PR comment.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  high:
+    description: Number of high-risk hunks
+    value: ${{ steps.scan.outputs.high }}
+  medium:
+    description: Number of medium-risk hunks
+    value: ${{ steps.scan.outputs.medium }}
+  low:
+    description: Number of low-risk hunks
+    value: ${{ steps.scan.outputs.low }}
+  report:
+    description: Path to the Markdown report
+    value: ${{ steps.scan.outputs.report }}
+  sarif-file:
+    description: Path to the SARIF file, when sarif is true
+    value: ${{ steps.scan.outputs.sarif }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check Node.js
+      shell: bash
+      run: |
+        if ! command -v node >/dev/null; then
+          echo "::error::riskdiff needs Node.js 18.11+. Add actions/setup-node before this step."
+          exit 2
+        fi
+
+    - name: Scan
+      id: scan
+      shell: bash
+      env:
+        RISKDIFF: ${{ github.action_path }}/bin/riskdiff.js
+        INPUT_BASE: ${{ inputs.base }}
+        PR_BASE: ${{ github.event.pull_request.base.ref }}
+        CHECK_PACKAGES: ${{ inputs.check-packages }}
+        WANT_SARIF: ${{ inputs.sarif }}
+      run: |
+        if [ -n "$INPUT_BASE" ]; then
+          range="$INPUT_BASE...HEAD"
+        elif [ -n "$PR_BASE" ]; then
+          git fetch --no-tags --quiet origin "$PR_BASE" || true
+          range="origin/$PR_BASE...HEAD"
+        else
+          range="HEAD~1..HEAD"
+        fi
+        if ! git rev-parse --quiet --verify "${range%%..*}" >/dev/null 2>&1; then
+          echo "::error::Can't find ${range%%..*}. Use actions/checkout with fetch-depth: 0."
+          exit 2
+        fi
+        echo "Comparing $range"
+
+        extra=()
+        [ "$CHECK_PACKAGES" = "true" ] && extra+=(--check-packages)
+
+        dir="$RUNNER_TEMP/riskdiff"
+        mkdir -p "$dir"
+        node "$RISKDIFF" "$range" "${extra[@]}" --json -o "$dir/report.json"
+        node "$RISKDIFF" "$range" "${extra[@]}" --md -o "$dir/report.md"
+        if [ "$WANT_SARIF" = "true" ]; then
+          node "$RISKDIFF" "$range" "${extra[@]}" --sarif -o "$dir/riskdiff.sarif"
+          echo "sarif=$dir/riskdiff.sarif" >> "$GITHUB_OUTPUT"
+        fi
+
+        node -e '
+          const s = require(process.argv[1]).summary;
+          for (const k of ["high", "medium", "low"]) console.log(`${k}=${s[k]}`);
+        ' "$dir/report.json" >> "$GITHUB_OUTPUT"
+        echo "report=$dir/report.md" >> "$GITHUB_OUTPUT"
+        echo "range=$range" >> "$GITHUB_OUTPUT"
+        cat "$dir/report.md" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Comment on pull request
+      if: inputs.comment == 'true' && github.event.pull_request.number
+      # PRs from forks get a read-only token; don't fail the scan over a comment.
+      continue-on-error: true
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+        REPORT: ${{ steps.scan.outputs.report }}
+      run: |
+        id=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+          -q '.[] | select(.body | startswith("<!-- riskdiff -->")) | .id' | tail -n 1)
+        if [ -n "$id" ]; then
+          gh api -X PATCH "repos/$REPO/issues/comments/$id" -F "body=@$REPORT" >/dev/null
+          echo "Updated comment $id"
+        else
+          gh api "repos/$REPO/issues/$PR/comments" -F "body=@$REPORT" >/dev/null
+          echo "Posted a new comment"
+        fi
+
+    - name: Gate
+      if: inputs.fail-on != ''
+      shell: bash
+      env:
+        FAIL_ON: ${{ inputs.fail-on }}
+        HIGH: ${{ steps.scan.outputs.high }}
+        MEDIUM: ${{ steps.scan.outputs.medium }}
+        LOW: ${{ steps.scan.outputs.low }}
+      run: |
+        case "$FAIL_ON" in
+          high) n=$HIGH ;;
+          medium) n=$((HIGH + MEDIUM)) ;;
+          low) n=$((HIGH + MEDIUM + LOW)) ;;
+          *) echo "::error::fail-on must be low, medium, or high"; exit 2 ;;
+        esac
+        if [ "$n" -gt 0 ]; then
+          echo "::error::riskdiff found $n hunk(s) at or above $FAIL_ON risk. See the job summary."
+          exit 1
+        fi
+        echo "No hunks at or above $FAIL_ON risk."

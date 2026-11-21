@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0 — 2026-11-21
+
+- **GitHub Action**: `uses: zeitgeistz/riskdiff@v1` posts (and keeps updating) a risk table on the PR, writes it to the job summary, and fails on a chosen level. Inputs: `base`, `fail-on`, `comment`, `check-packages`, `sarif`, `github-token`.
+- **`--sarif`** output (SARIF 2.1.0) for GitHub code scanning and other viewers.
+- **`-o, --output <file>`** writes the report to a file.
+- Markdown reports start with a `<!-- riskdiff -->` marker so the Action can find its own comment.
+- npm package is named `riskdiff-cli` (the command is still `riskdiff`), with a release workflow that publishes to npm when an `NPM_TOKEN` secret is set.
+- Using two output formats at once (e.g. `--json --md`) is now an error.
+
 ## 1.2.0 — 2026-11-21
 
 - **Package check.** Two new offline rules: `package-lookalike` (a new npm/PyPI dependency one or two edits from a popular package) and `duplicate-dependency` (a new library that does the same job as one already in the manifest).

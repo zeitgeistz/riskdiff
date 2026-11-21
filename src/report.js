@@ -53,6 +53,8 @@ export function formatText(results, { color = false, code = false } = {}) {
 export function formatMarkdown(results) {
   const s = summarize(results);
   const out = [
+    // Lets the GitHub Action find and update its own PR comment.
+    '<!-- riskdiff -->',
     '## riskdiff report',
     '',
     `**${s.files}** files · **${s.hunks}** hunks · 🔴 ${s.high} high · 🟠 ${s.medium} medium · 🔵 ${s.low} low`,
@@ -76,6 +78,55 @@ export function formatMarkdown(results) {
 export function formatJson(results) {
   return JSON.stringify(
     { summary: summarize(results), hunks: results.map(({ hunk, ...rest }) => rest) },
+    null,
+    2,
+  );
+}
+
+const SARIF_LEVEL = { high: 'error', medium: 'warning', low: 'note' };
+
+// SARIF 2.1.0, for GitHub code scanning and other SARIF viewers. One result per finding.
+// Deleted files are left out: there is no line left to annotate.
+export function formatSarif(results, { version, rules = [] } = {}) {
+  const used = new Map();
+  const sarifResults = [];
+  for (const r of results) {
+    if (r.score === 0 || r.status === 'deleted') continue;
+    for (const f of r.findings) {
+      const rule = rules.find((x) => x.id === f.id);
+      if (!used.has(f.id)) used.set(f.id, rule?.reason ?? f.reason);
+      sarifResults.push({
+        ruleId: f.id,
+        level: SARIF_LEVEL[r.level],
+        message: { text: `${f.reason} (hunk score ${r.score}, ${r.level} risk)` },
+        locations: [{ physicalLocation: { artifactLocation: { uri: r.file }, region: { startLine: Math.max(1, r.line) } } }],
+        partialFingerprints: { riskdiffHunk: `${r.file}:${f.id}:${r.context || r.line}` },
+        properties: { score: r.score, weight: f.weight, level: r.level },
+      });
+    }
+  }
+  return JSON.stringify(
+    {
+      $schema: 'https://json.schemastore.org/sarif-2.1.0.json',
+      version: '2.1.0',
+      runs: [
+        {
+          tool: {
+            driver: {
+              name: 'riskdiff',
+              version,
+              informationUri: 'https://github.com/zeitgeistz/riskdiff',
+              rules: [...used].map(([id, text]) => ({
+                id,
+                shortDescription: { text },
+                helpUri: 'https://github.com/zeitgeistz/riskdiff#-what-it-catches',
+              })),
+            },
+          },
+          results: sarifResults,
+        },
+      ],
+    },
     null,
     2,
   );
