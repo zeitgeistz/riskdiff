@@ -1,3 +1,5 @@
+![riskdiff reads a Git diff, scores its hunks, and puts the riskiest changes first.](docs/banner.svg)
+
 <div align="center">
 
 # 🎯 riskdiff
