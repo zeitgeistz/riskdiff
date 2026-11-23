@@ -1,33 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="280" viewBox="0 0 960 280" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="320" viewBox="0 0 960 320" role="img" aria-labelledby="title">
   <title id="title">riskdiff</title>
-  <desc id="desc">riskdiff reads a Git diff, scores its hunks, and puts the riskiest changes first.</desc>
-  <rect x="0.5" y="0.5" width="959" height="279" rx="16" fill="#101416" stroke="#34403E"/>
-  <path d="M52 49h30m-30 4h14" fill="none" stroke="#CBEA91" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="52" y="110" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="61" font-weight="700" fill="#F4F0E7" letter-spacing="-2.6">riskdiff</text>
-  <text x="54" y="148" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="23" font-weight="400" fill="#BAC4BA">Find the riskiest changes</text>
-  <text x="54" y="176" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="23" font-weight="400" fill="#BAC4BA">in a Git diff.</text>
-  <g aria-hidden="true">
-    <path d="M650 48h254m-254 26h254m-254 26h254m-254 26h254m-254 26h254m-254 26h254M659 48v130m26-130v130m26-130v130m26-130v130m26-130v130m26-130v130m26-130v130m26-130v130m26-130v130m26-130v130" fill="none" stroke="#2A342F" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 5"/>
-    <path d="M650 63V48h15m224 0h15v15M650 163v15h15m224 0h15v-15" fill="none" stroke="#718271" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="678" y="68" width="68" height="89" rx="8" fill="#191F20" stroke="#34403E"/>
-    <path d="M692 85h24m-24 15h38m-38 15h27m-27 15h33" fill="none" stroke="#718271" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M750 112h17m-5-5 5 5-5 5" fill="none" stroke="#CBEA91" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="780" y="61" width="110" height="29" rx="5" fill="#222B24" stroke="#CBEA91"/>
-    <circle cx="793" cy="75.5" r="2.5" fill="#CBEA91" stroke="none"/>
-    <path d="M803 73h70m-70 6h61" fill="none" stroke="#CBEA91" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="780" y="98" width="91" height="29" rx="5" fill="#191F20" stroke="#485750"/>
-    <circle cx="793" cy="112.5" r="2.5" fill="#BAC4BA" stroke="none"/>
-    <path d="M803 110h51m-51 6h42" fill="none" stroke="#718271" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="780" y="135" width="72" height="29" rx="5" fill="#191F20" stroke="#485750"/>
-    <circle cx="793" cy="149.5" r="2.5" fill="#BAC4BA" stroke="none"/>
-    <path d="M803 147h32m-32 6h23" fill="none" stroke="#718271" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-  <rect x="52" y="206" width="270.6666666666667" height="43" rx="7" fill="#222B24" stroke="#718271"/>
-  <text x="187.33333333333334" y="233" font-family="Consolas, SFMono-Regular, Menlo, monospace" font-size="17" font-weight="700" fill="#CBEA91" text-anchor="middle">Git diff</text>
-  <path d="M326.6666666666667 227.5h14m-4-4 4 4-4 4" fill="none" stroke="#CBEA91" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="344.6666666666667" y="206" width="270.6666666666667" height="43" rx="7" fill="#191F20" stroke="#34403E"/>
-  <text x="480" y="233" font-family="Consolas, SFMono-Regular, Menlo, monospace" font-size="17" font-weight="700" fill="#F4F0E7" text-anchor="middle">Score hunks</text>
-  <path d="M619.3333333333334 227.5h14m-4-4 4 4-4 4" fill="none" stroke="#CBEA91" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="637.3333333333334" y="206" width="270.6666666666667" height="43" rx="7" fill="#191F20" stroke="#34403E"/>
-  <text x="772.6666666666667" y="233" font-family="Consolas, SFMono-Regular, Menlo, monospace" font-size="17" font-weight="700" fill="#F4F0E7" text-anchor="middle">Review by risk</text>
+  <defs>
+    <radialGradient id="paper" cx="50%" cy="48%" r="70%">
+      <stop offset="0" stop-color="#10100F"/>
+      <stop offset="1" stop-color="#080808"/>
+    </radialGradient>
+    <linearGradient id="ivory" x2="0%" y2="100%">
+      <stop offset="0" stop-color="#FAF0D9"/>
+      <stop offset="1" stop-color="#EDE0C3"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="320" fill="url(#paper)"/>
+  <text x="480" y="190" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="100" font-weight="400" letter-spacing="-3" fill="url(#ivory)">riskdiff</text>
 </svg>
