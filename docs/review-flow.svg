@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="280" viewBox="0 0 960 280" role="img" aria-labelledby="title desc">
+<title id="title">From a diff to a review order</title><desc id="desc">riskdiff splits a Git diff into hunks, checks each hunk against weighted rules, then lists the riskiest hunks first.</desc>
+<rect width="960" height="280" fill="#090909"/>
+<text x="36" y="42" font-family="Georgia, 'Times New Roman', serif" font-size="29" fill="#F3E8CD" >Where to look first</text>
+<path d="M36 62h248" fill="none" stroke="#C0B69F" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M356 62h248" fill="none" stroke="#C0B69F" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M676 62h248" fill="none" stroke="#C0B69F" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M64 87h54l15 15v74H64zM118 87v16h15M77 118h42M77 134h29M77 150h35" fill="none" stroke="#C0B69F" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="36" y="207" font-family="Georgia, 'Times New Roman', serif" font-size="24" fill="#F3E8CD" >Read the diff</text>
+<text x="36" y="236" font-family="Georgia, 'Times New Roman', serif" font-size="17" fill="#F3E8CD" fill-opacity=".78">Split changed lines into hunks.</text>
+<path d="M257 131h59m-7-6 7 6-7 6" fill="none" stroke="#C0B69F" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="384" y="87" width="174" height="89" rx="2" fill="#11100E" stroke="#665C47"/>
+<text x="401" y="119" font-family="Georgia, 'Times New Roman', serif" font-size="17" fill="#F3E8CD" >path + changes</text>
+<path d="M401 133h138" fill="none" stroke="#C0B69F" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="401" y="157" font-family="Georgia, 'Times New Roman', serif" font-size="17" fill="#F3E8CD" >matched rules</text>
+<text x="356" y="207" font-family="Georgia, 'Times New Roman', serif" font-size="24" fill="#F3E8CD" >Score each hunk</text>
+<text x="356" y="236" font-family="Georgia, 'Times New Roman', serif" font-size="17" fill="#F3E8CD" fill-opacity=".78">Add the weights of matched rules.</text>
+<path d="M577 131h59m-7-6 7 6-7 6" fill="none" stroke="#C0B69F" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="698" y="82" width="126" height="26" rx="2" fill="#11100E" stroke="#665C47"/>
+<text x="710" y="101" font-family="Georgia, 'Times New Roman', serif" font-size="16" fill="#F3E8CD" >High</text>
+<rect x="698" y="116" width="96" height="26" rx="2" fill="#11100E" stroke="#665C47"/>
+<text x="710" y="135" font-family="Georgia, 'Times New Roman', serif" font-size="16" fill="#F3E8CD" >Medium</text>
+<rect x="698" y="150" width="60" height="26" rx="2" fill="#11100E" stroke="#665C47"/>
+<text x="710" y="169" font-family="Georgia, 'Times New Roman', serif" font-size="16" fill="#F3E8CD" >Low</text>
+<text x="676" y="207" font-family="Georgia, 'Times New Roman', serif" font-size="24" fill="#F3E8CD" >Review by risk</text>
+<text x="676" y="236" font-family="Georgia, 'Times New Roman', serif" font-size="17" fill="#F3E8CD" fill-opacity=".78">Start with the highest score.</text>
+</svg>

@@ -1,5 +1,3 @@
-![riskdiff reads a Git diff, scores its hunks, and puts the riskiest changes first.](docs/banner.svg)
-
 <div align="center">
 
 # 🎯 riskdiff
@@ -35,6 +33,8 @@ AI writes a growing share of code, but reviewing it hasn't gotten faster:
 - Agents skip tests, weaken assertions, and add packages instead of using the ones you already have.
 
 A big diff gets read top to bottom, and attention runs out before the dangerous line. riskdiff doesn't replace review. It tells you **where to spend it**.
+
+![How riskdiff turns a Git diff into a risk-ranked review order.](docs/review-flow.svg)
 
 ## ✨ Features
 
@@ -243,6 +243,8 @@ RISKDIFF_AI_MODEL=claude-haiku-5-5 riskdiff --ai   # pick another model
 - Uses `claude-opus-5-5` at low effort by default. Any API problem (no key, rate limit, network) prints a warning and the report still comes out.
 
 ## 🧮 How scoring works
+
+![Scoring example. SQL injection adds 25, an auth path adds 25, and a total of 50 is high risk.](docs/scoring.svg)
 
 1. The diff is split into **hunks** (the `@@ … @@` blocks).
 2. Each rule is checked against the hunk's file path, added lines, and removed lines. A rule counts **once per hunk**.

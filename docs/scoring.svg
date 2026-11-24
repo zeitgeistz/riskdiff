@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="240" viewBox="0 0 960 240" role="img" aria-labelledby="title desc">
+<title id="title">Why context changes the score</title><desc id="desc">Illustrative scoring example. A SQL injection rule has weight 25. An authentication path adds 25. The total score of 50 is high risk.</desc>
+<rect width="960" height="240" fill="#090909"/>
+<text x="36" y="43" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#F3E8CD" >The same change carries more risk in auth code.</text>
+<rect x="36" y="76" width="342" height="117" rx="2" fill="#11100E" stroke="#665C47"/>
+<text x="56" y="107" font-family="Georgia, 'Times New Roman', serif" font-size="19" fill="#F3E8CD" >src/auth/login.js</text>
+<path d="M56 122h302" fill="none" stroke="#C0B69F" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="56" y="152" font-family="Georgia, 'Times New Roman', serif" font-size="20" fill="#F3E8CD" >SQL built from user input</text>
+<text x="56" y="177" font-family="Georgia, 'Times New Roman', serif" font-size="16" fill="#F3E8CD" fill-opacity=".7">Illustrative finding</text>
+<text x="414" y="117" font-family="Georgia, 'Times New Roman', serif" font-size="20" fill="#F3E8CD" >SQL rule</text>
+<text x="414" y="158" font-family="Georgia, 'Times New Roman', serif" font-size="36" fill="#F3E8CD" >25</text>
+<text x="533" y="150" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#F3E8CD" >+</text>
+<text x="582" y="117" font-family="Georgia, 'Times New Roman', serif" font-size="20" fill="#F3E8CD" >Auth path</text>
+<text x="582" y="158" font-family="Georgia, 'Times New Roman', serif" font-size="36" fill="#F3E8CD" >25</text>
+<text x="704" y="150" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#F3E8CD" >=</text>
+<rect x="754" y="84" width="170" height="109" rx="2" fill="#11100E" stroke="#665C47"/>
+<text x="776" y="126" font-family="Georgia, 'Times New Roman', serif" font-size="39" fill="#F3E8CD" >50</text>
+<text x="776" y="164" font-family="Georgia, 'Times New Roman', serif" font-size="22" fill="#F3E8CD" >High risk</text>
+</svg>
