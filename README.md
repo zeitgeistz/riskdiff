@@ -2,6 +2,8 @@
 
 # 🎯 riskdiff
 
+<img src="docs/social-preview.png" alt="riskdiff promo banner showing a code review ordered by high, medium, and low risk" width="820">
+
 **Know which part of a diff to review first.**
 
 riskdiff reads a `git diff`, scores every hunk for risk, and sorts the hunks riskiest first.
